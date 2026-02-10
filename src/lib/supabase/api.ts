@@ -10,18 +10,14 @@ export async function createApiClient(
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
     const supabase = createClientWithToken(token);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser(token);
-    if (user) return { supabase, user };
+    const { data } = await supabase.auth.getUser(token);
+    if (data?.user) return { supabase, user: data.user };
     return null;
   }
 
   // Fall back to cookie-based auth
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) return { supabase, user };
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) return { supabase, user: data.user };
   return null;
 }

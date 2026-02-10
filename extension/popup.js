@@ -20,6 +20,49 @@ async function getConfig() {
   };
 }
 
+// Validate stored token by attempting a refresh; returns true if session is valid
+async function validateSession() {
+  const stored = await chrome.storage.local.get(["refreshToken", "anonKey", "supabaseUrl", "apiBase"]);
+  if (!stored.refreshToken) return false;
+
+  const apiBase = stored.apiBase || "http://localhost:3000";
+  const supabaseUrl = stored.supabaseUrl || "https://coirzeiwdjawjcyotdjj.supabase.co";
+
+  let anonKey = stored.anonKey;
+  if (!anonKey) {
+    try {
+      const res = await fetch(`${apiBase}/api/config`);
+      const data = await res.json();
+      anonKey = data.anonKey;
+    } catch {
+      return false;
+    }
+  }
+  if (!anonKey) return false;
+
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: anonKey },
+        body: JSON.stringify({ refresh_token: stored.refreshToken }),
+      }
+    );
+    const data = await res.json();
+    if (data.access_token) {
+      await chrome.storage.local.set({
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+      });
+      return true;
+    }
+  } catch {
+    // refresh failed
+  }
+  return false;
+}
+
 // Check auth state on load
 (async () => {
   const config = await getConfig();
@@ -31,7 +74,15 @@ async function getConfig() {
   });
 
   if (config.accessToken) {
-    showLoggedIn(config.email);
+    // Token exists — refresh it to make sure it's still valid
+    const valid = await validateSession();
+    if (valid) {
+      showLoggedIn(config.email);
+    } else {
+      // Stale session — clear and show login
+      await chrome.storage.local.remove(["accessToken", "refreshToken", "email"]);
+      showLoggedOut();
+    }
   } else {
     showLoggedOut();
   }
@@ -90,6 +141,7 @@ loginBtn.addEventListener("click", async () => {
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
         email: email,
+        supabaseUrl: "https://coirzeiwdjawjcyotdjj.supabase.co",
       });
       showLoggedIn(email);
     } else {

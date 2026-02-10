@@ -18,6 +18,60 @@ async function getConfig() {
   };
 }
 
+// Refresh the access token using the stored refresh token
+async function refreshAccessToken() {
+  const stored = await chrome.storage.local.get(["refreshToken", "apiBase"]);
+  if (!stored.refreshToken) return null;
+
+  const apiBase = stored.apiBase || "http://localhost:3000";
+
+  try {
+    // Get the anon key for the Supabase API call
+    let anonKey = (await chrome.storage.local.get("anonKey")).anonKey;
+    if (!anonKey) {
+      const res = await fetch(`${apiBase}/api/config`);
+      const data = await res.json();
+      anonKey = data.anonKey;
+    }
+    if (!anonKey) return null;
+
+    // Get the Supabase URL
+    let supabaseUrl = (await chrome.storage.local.get("supabaseUrl")).supabaseUrl;
+    if (!supabaseUrl) {
+      const res = await fetch(`${apiBase}/api/config`);
+      const data = await res.json();
+      supabaseUrl = data.supabaseUrl;
+    }
+    if (!supabaseUrl) return null;
+
+    const res = await fetch(
+      `${supabaseUrl}/auth/v1/token?grant_type=refresh_token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({ refresh_token: stored.refreshToken }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.access_token) {
+      await chrome.storage.local.set({
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+      });
+      return data.access_token;
+    }
+  } catch {
+    // Refresh failed
+  }
+
+  return null;
+}
+
 async function savePage({ url, title }) {
   const config = await getConfig();
 
@@ -32,14 +86,31 @@ async function savePage({ url, title }) {
       lowerUrl.includes("arxiv.org/pdf/");
     const endpoint = isPdf ? "/api/save-pdf" : "/api/save";
 
-    const response = await fetch(`${config.apiBase}${endpoint}`, {
+    let token = config.accessToken;
+    let response = await fetch(`${config.apiBase}${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${config.accessToken}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ url, title }),
     });
+
+    // Token expired — try refreshing before giving up
+    if (response.status === 401) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        token = newToken;
+        response = await fetch(`${config.apiBase}${endpoint}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ url, title }),
+        });
+      }
+    }
 
     const data = await response.json();
 
@@ -48,7 +119,7 @@ async function savePage({ url, title }) {
     }
 
     if (response.status === 401) {
-      // Token expired — clear it so popup shows login
+      // Refresh also failed — clear tokens and require re-login
       await chrome.storage.local.remove(["accessToken", "refreshToken", "email"]);
       return { success: false, error: "Session expired. Please sign in again." };
     }
@@ -71,16 +142,38 @@ async function saveHighlight({ url, title, highlight }) {
   }
 
   try {
-    const response = await fetch(`${config.apiBase}/api/save`, {
+    let token = config.accessToken;
+    let response = await fetch(`${config.apiBase}/api/save`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${config.accessToken}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ url, title, highlight }),
     });
 
+    // Token expired — try refreshing before giving up
+    if (response.status === 401) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        token = newToken;
+        response = await fetch(`${config.apiBase}/api/save`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ url, title, highlight }),
+        });
+      }
+    }
+
     const data = await response.json();
+
+    if (response.status === 401) {
+      await chrome.storage.local.remove(["accessToken", "refreshToken", "email"]);
+      return { success: false, error: "Session expired. Please sign in again." };
+    }
 
     if (!response.ok) {
       return { success: false, error: data.error };
