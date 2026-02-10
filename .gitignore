@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# extension config (contains API base URL)
+extension/config.js
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

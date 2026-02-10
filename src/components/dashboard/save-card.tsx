@@ -1,0 +1,136 @@
+"use client";
+
+import { Badge } from "@/components/ui/badge";
+import { Save, Tag } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import {
+  Archive,
+  ExternalLink,
+  FileText,
+  Heart,
+  Highlighter,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
+
+interface SaveCardProps {
+  save: Save;
+  isSelected: boolean;
+  onSelect: () => void;
+  onToggleFavorite: () => void;
+  onToggleArchive: () => void;
+  onDelete: () => void;
+}
+
+export function SaveCard({
+  save,
+  isSelected,
+  onSelect,
+  onToggleFavorite,
+  onToggleArchive,
+  onDelete,
+}: SaveCardProps) {
+  const sourceIcon = {
+    article: <FileText className="h-3.5 w-3.5" />,
+    pdf: <FileText className="h-3.5 w-3.5 text-red-500" />,
+    highlight: <Highlighter className="h-3.5 w-3.5 text-yellow-500" />,
+  }[save.source_type];
+
+  return (
+    <div
+      onClick={onSelect}
+      className={cn(
+        "group p-4 rounded-xl border cursor-pointer transition-all",
+        isSelected
+          ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
+          : "border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700"
+      )}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h3 className="font-medium text-sm leading-snug line-clamp-2 flex-1">
+          {save.title}
+        </h3>
+        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite();
+            }}
+            className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          >
+            <Heart
+              className={cn(
+                "h-3.5 w-3.5",
+                save.is_favorite
+                  ? "fill-red-500 text-red-500"
+                  : "text-neutral-400"
+              )}
+            />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleArchive();
+            }}
+            className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          >
+            <Archive className="h-3.5 w-3.5 text-neutral-400" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-neutral-400 hover:text-red-500" />
+          </button>
+        </div>
+      </div>
+
+      {save.excerpt && (
+        <p className="text-xs text-neutral-500 line-clamp-2 mb-2">
+          {save.excerpt}
+        </p>
+      )}
+
+      {save.highlight && (
+        <p className="text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded mb-2 line-clamp-2 italic">
+          &ldquo;{save.highlight}&rdquo;
+        </p>
+      )}
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="flex items-center gap-1 text-xs text-neutral-400">
+          {sourceIcon}
+          {save.site_name || new URL(save.url).hostname}
+        </span>
+
+        {save.ai_status === "done" && (
+          <Sparkles className="h-3 w-3 text-blue-500" />
+        )}
+
+        {save.tags?.map((tag: Tag) => (
+          <Badge key={tag.id} color={tag.color || undefined}>
+            {tag.name}
+          </Badge>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between mt-2">
+        <time className="text-[11px] text-neutral-400">
+          {new Date(save.created_at).toLocaleDateString()}
+        </time>
+        <a
+          href={save.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-neutral-400 hover:text-blue-500 transition-colors"
+        >
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+    </div>
+  );
+}
