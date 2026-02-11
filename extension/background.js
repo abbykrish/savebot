@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function getConfig() {
   const stored = await chrome.storage.local.get(["apiBase", "accessToken"]);
   return {
-    apiBase: stored.apiBase || "http://localhost:3000",
+    apiBase: stored.apiBase || "https://savebot-nine.vercel.app",
     accessToken: stored.accessToken || null,
   };
 }
@@ -23,7 +23,7 @@ async function refreshAccessToken() {
   const stored = await chrome.storage.local.get(["refreshToken", "apiBase"]);
   if (!stored.refreshToken) return null;
 
-  const apiBase = stored.apiBase || "http://localhost:3000";
+  const apiBase = stored.apiBase || "https://savebot-nine.vercel.app";
 
   try {
     // Get the anon key for the Supabase API call

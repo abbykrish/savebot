@@ -1,9 +1,32 @@
 import { createApiClient } from "@/lib/supabase/api";
 import { extractArticle } from "@/lib/readability";
+import { autoTag } from "@/lib/claude";
+import { ensureTagsExist, linkTagsToSave } from "@/lib/tags";
 import { handleCorsOptions, jsonResponse } from "@/lib/cors";
+import { SupabaseClient } from "@supabase/supabase-js";
 
 export async function OPTIONS(request: Request) {
   return handleCorsOptions(request);
+}
+
+// Fire-and-forget auto-tagging — don't block the save response
+function triggerAutoTag(
+  supabase: SupabaseClient,
+  userId: string,
+  saveId: string,
+  title: string,
+  content: string
+) {
+  autoTag(title, content)
+    .then(async (tags) => {
+      if (tags.length > 0) {
+        const tagIds = await ensureTagsExist(supabase, userId, tags);
+        await linkTagsToSave(supabase, saveId, tagIds);
+      }
+    })
+    .catch((err) => {
+      console.error("Auto-tag failed (non-blocking):", err);
+    });
 }
 
 export async function POST(request: Request) {
@@ -53,6 +76,8 @@ export async function POST(request: Request) {
         .single();
 
       if (error) throw error;
+
+      triggerAutoTag(supabase, user.id, save.id, save.title, highlight);
       return jsonResponse({ save }, request);
     }
 
@@ -75,6 +100,8 @@ export async function POST(request: Request) {
         .single();
 
       if (error) throw error;
+
+      triggerAutoTag(supabase, user.id, save.id, save.title, save.title);
       return jsonResponse({ save, extraction_failed: true }, request);
     }
 
@@ -98,6 +125,10 @@ export async function POST(request: Request) {
 
     if (error) throw error;
 
+    triggerAutoTag(
+      supabase, user.id, save.id, title,
+      extracted?.content || extracted?.excerpt || title
+    );
     return jsonResponse({ save }, request);
   } catch (err) {
     console.error("Save error:", err);

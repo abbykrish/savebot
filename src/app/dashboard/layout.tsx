@@ -5,7 +5,30 @@ import { useFolders } from "@/hooks/use-folders";
 import { useTags } from "@/hooks/use-tags";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+
+import { Tag } from "@/lib/types";
+
+// Context so child components can access tag state + management
+interface DashboardContextValue {
+  selectedTagId: string | null;
+  allTags: Tag[];
+  refetchTags: () => void;
+  createTag: (name: string, color?: string) => Promise<Tag | null>;
+  addTagToSave: (saveId: string, tagId: string) => Promise<void>;
+  removeTagFromSave: (saveId: string, tagId: string) => Promise<void>;
+}
+const DashboardContext = createContext<DashboardContextValue>({
+  selectedTagId: null,
+  allTags: [],
+  refetchTags: () => {},
+  createTag: async () => null,
+  addTagToSave: async () => {},
+  removeTagFromSave: async () => {},
+});
+export function useDashboardContext() {
+  return useContext(DashboardContext);
+}
 
 export default function DashboardLayout({
   children,
@@ -30,7 +53,7 @@ export default function DashboardLayout({
     });
   }, [supabase, router]);
 
-  const { tags, createTag, deleteTag } = useTags();
+  const { tags, refetch: refetchTags, createTag, deleteTag, addTagToSave, removeTagFromSave } = useTags();
   const { folders, createFolder, deleteFolder } = useFolders();
 
   const handleSignOut = async () => {
@@ -58,7 +81,9 @@ export default function DashboardLayout({
         onDeleteTag={(id) => deleteTag(id)}
         onSignOut={handleSignOut}
       />
-      {children}
+      <DashboardContext.Provider value={{ selectedTagId, allTags: tags, refetchTags, createTag, addTagToSave, removeTagFromSave }}>
+        {children}
+      </DashboardContext.Provider>
     </div>
   );
 }

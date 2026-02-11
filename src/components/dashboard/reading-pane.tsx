@@ -8,37 +8,59 @@ import {
   ExternalLink,
   Heart,
   Loader2,
+  Plus,
   Sparkles,
   X,
 } from "lucide-react";
 import { NotesEditor } from "./notes-editor";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 interface ReadingPaneProps {
   save: Save;
+  allTags: Tag[];
   onClose: () => void;
   onToggleFavorite: () => void;
   onToggleArchive: () => void;
   onUpdateNotes: (notes: string) => void;
   onProcessAi: () => void;
+  onAddTag: (tagId: string) => void;
+  onRemoveTag: (tagId: string) => void;
+  onCreateAndAddTag: (name: string) => void;
 }
 
 export function ReadingPane({
   save,
+  allTags,
   onClose,
   onToggleFavorite,
   onToggleArchive,
   onUpdateNotes,
   onProcessAi,
+  onAddTag,
+  onRemoveTag,
+  onCreateAndAddTag,
 }: ReadingPaneProps) {
   const [aiLoading, setAiLoading] = useState(false);
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const [tagSearch, setTagSearch] = useState("");
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
   const handleProcessAi = async () => {
     setAiLoading(true);
     onProcessAi();
-    // The parent will refetch; we just show loading state briefly
     setTimeout(() => setAiLoading(false), 3000);
   };
+
+  // Tags not already on this save, filtered by search
+  const availableTags = useMemo(() => {
+    const currentTagIds = new Set(save.tags?.map((t: Tag) => t.id) || []);
+    return allTags
+      .filter((t) => !currentTagIds.has(t.id))
+      .filter((t) => t.name.includes(tagSearch.toLowerCase().trim()));
+  }, [allTags, save.tags, tagSearch]);
+
+  const trimmedSearch = tagSearch.toLowerCase().trim();
+  const exactMatch = allTags.some((t) => t.name === trimmedSearch);
 
   return (
     <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border-l border-neutral-200 dark:border-neutral-800">
@@ -100,16 +122,100 @@ export function ReadingPane({
           )}
         </div>
 
-        {/* Tags */}
-        {save.tags && save.tags.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap mb-4">
-            {save.tags.map((tag: Tag) => (
+        {/* Tags — editable */}
+        <div className="mb-4">
+          <div className="flex gap-1.5 flex-wrap items-center">
+            {save.tags?.map((tag: Tag) => (
               <Badge key={tag.id} color={tag.color || undefined}>
                 {tag.name}
+                <button
+                  onClick={() => onRemoveTag(tag.id)}
+                  className="ml-1 hover:text-red-500 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </Badge>
             ))}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setTagDropdownOpen(!tagDropdownOpen);
+                  setTagSearch("");
+                  setTimeout(() => tagInputRef.current?.focus(), 50);
+                }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border border-dashed border-neutral-300 dark:border-neutral-700 text-neutral-500 hover:border-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                Add tag
+              </button>
+              {tagDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-10">
+                  <div className="p-2">
+                    <input
+                      ref={tagInputRef}
+                      type="text"
+                      value={tagSearch}
+                      onChange={(e) => setTagSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && trimmedSearch) {
+                          if (!exactMatch) {
+                            onCreateAndAddTag(trimmedSearch);
+                          } else {
+                            const existing = availableTags.find(
+                              (t) => t.name === trimmedSearch
+                            );
+                            if (existing) onAddTag(existing.id);
+                          }
+                          setTagSearch("");
+                          setTagDropdownOpen(false);
+                        }
+                        if (e.key === "Escape") setTagDropdownOpen(false);
+                      }}
+                      placeholder="Search or create..."
+                      className="w-full px-2 py-1 text-xs border border-neutral-200 dark:border-neutral-700 rounded bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="max-h-32 overflow-y-auto">
+                    {availableTags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        onClick={() => {
+                          onAddTag(tag.id);
+                          setTagDropdownOpen(false);
+                          setTagSearch("");
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2"
+                      >
+                        <span
+                          className="h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: tag.color || "#6b7280" }}
+                        />
+                        {tag.name}
+                      </button>
+                    ))}
+                    {trimmedSearch && !exactMatch && (
+                      <button
+                        onClick={() => {
+                          onCreateAndAddTag(trimmedSearch);
+                          setTagDropdownOpen(false);
+                          setTagSearch("");
+                        }}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800 text-blue-600"
+                      >
+                        Create &ldquo;{trimmedSearch}&rdquo;
+                      </button>
+                    )}
+                    {availableTags.length === 0 && !trimmedSearch && (
+                      <p className="px-3 py-1.5 text-xs text-neutral-400">
+                        No more tags
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
 
         {/* AI Summary */}
         {save.summary && (
@@ -124,7 +230,7 @@ export function ReadingPane({
           </div>
         )}
 
-        {/* Summarize button (only show when no summary yet) */}
+        {/* Summarize button */}
         {!save.summary && save.ai_status !== "processing" && (
           <Button
             variant="outline"
@@ -156,27 +262,21 @@ export function ReadingPane({
           </blockquote>
         )}
 
-        {/* Article content */}
-        {save.content && (
-          <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
-            {save.content}
+        {/* Link card */}
+        <a
+          href={save.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors mb-4"
+        >
+          <ExternalLink className="h-5 w-5 text-neutral-400 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{save.title}</p>
+            <p className="text-xs text-neutral-400 truncate">
+              {save.url}
+            </p>
           </div>
-        )}
-
-        {!save.content && !save.highlight && (
-          <p className="text-sm text-neutral-400 italic">
-            No content extracted. Visit the{" "}
-            <a
-              href={save.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              original page
-            </a>
-            .
-          </p>
-        )}
+        </a>
       </div>
 
       {/* Notes */}

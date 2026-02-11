@@ -5,12 +5,12 @@ import { SavesGrid } from "@/components/dashboard/saves-grid";
 import { SearchBar } from "@/components/dashboard/search-bar";
 import { useSaves } from "@/hooks/use-saves";
 import { useSearch } from "@/hooks/use-search";
+import { useDashboardContext } from "@/app/dashboard/layout";
 import { Save } from "@/lib/types";
 import { useCallback, useMemo, useState } from "react";
 
 interface SavesViewProps {
   folderId?: string | null;
-  tagId?: string | null;
   sourceType?: string | null;
   showArchived?: boolean;
   showFavorites?: boolean;
@@ -18,12 +18,12 @@ interface SavesViewProps {
 
 export function SavesView({
   folderId,
-  tagId,
   sourceType,
   showArchived,
   showFavorites,
 }: SavesViewProps) {
   const [selectedSaveId, setSelectedSaveId] = useState<string | null>(null);
+  const { selectedTagId, allTags, refetchTags, createTag, addTagToSave, removeTagFromSave } = useDashboardContext();
 
   const {
     saves,
@@ -33,7 +33,7 @@ export function SavesView({
     toggleFavorite,
     toggleArchive,
     updateNotes,
-  } = useSaves({ folderId, tagId, sourceType, showArchived, showFavorites });
+  } = useSaves({ folderId, tagId: selectedTagId, sourceType, showArchived, showFavorites });
 
   const {
     results: searchResults,
@@ -60,11 +60,40 @@ export function SavesView({
           body: JSON.stringify({ save_id: saveId }),
         });
         refetchSaves();
+        refetchTags();
       } catch (err) {
         console.error("AI processing failed:", err);
       }
     },
-    [refetchSaves]
+    [refetchSaves, refetchTags]
+  );
+
+  const handleAddTag = useCallback(
+    async (saveId: string, tagId: string) => {
+      await addTagToSave(saveId, tagId);
+      refetchSaves();
+    },
+    [addTagToSave, refetchSaves]
+  );
+
+  const handleRemoveTag = useCallback(
+    async (saveId: string, tagId: string) => {
+      await removeTagFromSave(saveId, tagId);
+      refetchSaves();
+      refetchTags();
+    },
+    [removeTagFromSave, refetchSaves, refetchTags]
+  );
+
+  const handleCreateAndAddTag = useCallback(
+    async (saveId: string, name: string) => {
+      const tag = await createTag(name);
+      if (tag) {
+        await addTagToSave(saveId, tag.id);
+        refetchSaves();
+      }
+    },
+    [createTag, addTagToSave, refetchSaves]
   );
 
   const handleDelete = async (id: string) => {
@@ -102,11 +131,15 @@ export function SavesView({
           <div className="w-full lg:w-[480px] xl:w-[560px] shrink-0">
             <ReadingPane
               save={selectedSave}
+              allTags={allTags}
               onClose={() => setSelectedSaveId(null)}
               onToggleFavorite={() => toggleFavorite(selectedSave.id)}
               onToggleArchive={() => toggleArchive(selectedSave.id)}
               onUpdateNotes={(notes) => updateNotes(selectedSave.id, notes)}
               onProcessAi={() => handleProcessAi(selectedSave.id)}
+              onAddTag={(tagId) => handleAddTag(selectedSave.id, tagId)}
+              onRemoveTag={(tagId) => handleRemoveTag(selectedSave.id, tagId)}
+              onCreateAndAddTag={(name) => handleCreateAndAddTag(selectedSave.id, name)}
             />
           </div>
         )}

@@ -4,6 +4,12 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Strip markdown code fences from Claude responses before parsing
+function stripCodeFences(text: string): string {
+  const match = text.match(/^\s*```(?:json)?\s*\n?([\s\S]*?)\n?\s*```\s*$/);
+  return match ? match[1] : text;
+}
+
 interface SummarizeResult {
   summary: string;
   tags: string[];
@@ -36,8 +42,9 @@ Return ONLY valid JSON, no markdown fences or other text.`,
     ],
   });
 
-  const text =
+  const raw =
     message.content[0].type === "text" ? message.content[0].text : "";
+  const text = stripCodeFences(raw);
 
   try {
     const parsed = JSON.parse(text);
@@ -47,6 +54,43 @@ Return ONLY valid JSON, no markdown fences or other text.`,
     };
   } catch {
     // If JSON parsing fails, use the raw text as summary
-    return { summary: text.slice(0, 500), tags: [] };
+    return { summary: raw.slice(0, 500), tags: [] };
+  }
+}
+
+// Lightweight tag-only function for auto-tagging on save
+export async function autoTag(
+  title: string,
+  content: string
+): Promise<string[]> {
+  const truncated = content.slice(0, 4000);
+
+  const message = await anthropic.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 128,
+    messages: [
+      {
+        role: "user",
+        content: `Return a JSON array of 2-5 short, lowercase tags for this article. Examples: ["javascript", "machine-learning", "design"]
+
+Title: ${title}
+
+Content:
+${truncated}
+
+Return ONLY a valid JSON array, nothing else.`,
+      },
+    ],
+  });
+
+  const raw =
+    message.content[0].type === "text" ? message.content[0].text : "";
+  const text = stripCodeFences(raw);
+
+  try {
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed.slice(0, 5) : [];
+  } catch {
+    return [];
   }
 }

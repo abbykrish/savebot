@@ -14,7 +14,7 @@ const passwordInput = document.getElementById("password");
 async function getConfig() {
   const stored = await chrome.storage.local.get(["apiBase", "accessToken", "email"]);
   return {
-    apiBase: stored.apiBase || "http://localhost:3000",
+    apiBase: stored.apiBase || "https://savebot-nine.vercel.app",
     accessToken: stored.accessToken || null,
     email: stored.email || null,
   };
@@ -25,7 +25,7 @@ async function validateSession() {
   const stored = await chrome.storage.local.get(["refreshToken", "anonKey", "supabaseUrl", "apiBase"]);
   if (!stored.refreshToken) return false;
 
-  const apiBase = stored.apiBase || "http://localhost:3000";
+  const apiBase = stored.apiBase || "https://savebot-nine.vercel.app";
   const supabaseUrl = stored.supabaseUrl || "https://coirzeiwdjawjcyotdjj.supabase.co";
 
   let anonKey = stored.anonKey;
