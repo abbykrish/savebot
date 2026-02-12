@@ -17,10 +17,14 @@ interface SummarizeResult {
 
 export async function summarizeAndTag(
   title: string,
-  content: string
+  content: string,
+  existingTags: string[] = []
 ): Promise<SummarizeResult> {
   // Truncate content to ~8k chars to stay within reasonable token limits
   const truncated = content.slice(0, 8000);
+  const tagList = existingTags.length > 0
+    ? `\nExisting tags in the user's library (STRONGLY prefer reusing these over creating new ones): [${existingTags.map(t => `"${t}"`).join(", ")}]`
+    : "";
 
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-5-20250929",
@@ -30,7 +34,7 @@ export async function summarizeAndTag(
         role: "user",
         content: `Analyze this article and return a JSON object with two fields:
 - "summary": A 2-3 sentence summary of the key points.
-- "tags": An array of 2-5 short, lowercase tags (e.g. "javascript", "machine-learning", "design").
+- "tags": An array of 2-5 short, lowercase tags. Reuse existing tags whenever possible — only create a new tag if none of the existing ones fit.${tagList}
 
 Article title: ${title}
 
@@ -61,9 +65,13 @@ Return ONLY valid JSON, no markdown fences or other text.`,
 // Lightweight tag-only function for auto-tagging on save
 export async function autoTag(
   title: string,
-  content: string
+  content: string,
+  existingTags: string[] = []
 ): Promise<string[]> {
   const truncated = content.slice(0, 4000);
+  const tagList = existingTags.length > 0
+    ? `\n\nExisting tags in the user's library (STRONGLY prefer reusing these over creating new ones): [${existingTags.map(t => `"${t}"`).join(", ")}]`
+    : "";
 
   const message = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -71,7 +79,7 @@ export async function autoTag(
     messages: [
       {
         role: "user",
-        content: `Return a JSON array of 2-5 short, lowercase tags for this article. Examples: ["javascript", "machine-learning", "design"]
+        content: `Return a JSON array of 2-5 short, lowercase tags for this article. Reuse existing tags whenever possible — only create a new tag if none of the existing ones fit.${tagList}
 
 Title: ${title}
 

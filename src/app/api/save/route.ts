@@ -17,16 +17,22 @@ function triggerAutoTag(
   title: string,
   content: string
 ) {
-  autoTag(title, content)
-    .then(async (tags) => {
-      if (tags.length > 0) {
-        const tagIds = await ensureTagsExist(supabase, userId, tags);
-        await linkTagsToSave(supabase, saveId, tagIds);
-      }
-    })
-    .catch((err) => {
-      console.error("Auto-tag failed (non-blocking):", err);
-    });
+  (async () => {
+    // Fetch existing tags so Claude can reuse them
+    const { data: userTags } = await supabase
+      .from("tags")
+      .select("name")
+      .eq("user_id", userId);
+    const existingTagNames = (userTags || []).map((t: { name: string }) => t.name);
+
+    const tags = await autoTag(title, content, existingTagNames);
+    if (tags.length > 0) {
+      const tagIds = await ensureTagsExist(supabase, userId, tags);
+      await linkTagsToSave(supabase, saveId, tagIds);
+    }
+  })().catch((err) => {
+    console.error("Auto-tag failed (non-blocking):", err);
+  });
 }
 
 export async function POST(request: Request) {

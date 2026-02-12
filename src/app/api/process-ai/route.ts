@@ -46,8 +46,15 @@ export async function POST(request: Request) {
       .update({ ai_status: "processing" })
       .eq("id", save_id);
 
+    // Fetch existing tags so Claude can reuse them
+    const { data: userTags } = await supabase
+      .from("tags")
+      .select("name")
+      .eq("user_id", user.id);
+    const existingTagNames = (userTags || []).map((t: { name: string }) => t.name);
+
     // Call Claude
-    const result = await summarizeAndTag(save.title, textContent);
+    const result = await summarizeAndTag(save.title, textContent, existingTagNames);
 
     // Update save with summary
     await supabase
