@@ -49,6 +49,8 @@ export function SavesView({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const effectiveFolderId = folderId ?? selectedFolderId;
+
   const {
     saves,
     loading: savesLoading,
@@ -59,7 +61,7 @@ export function SavesView({
     toggleRead,
     updateNotes,
     setFolderId,
-  } = useSaves({ folderId, folderTagIds, tagId: selectedTagId, sourceType, showArchived, showFavorites });
+  } = useSaves({ folderId: effectiveFolderId, folderTagIds, tagId: selectedTagId, sourceType, showArchived, showFavorites });
 
   const {
     results: searchResults,
