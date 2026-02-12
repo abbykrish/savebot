@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 interface UseSavesOptions {
   folderId?: string | null;
+  folderTagIds?: string[];
   tagId?: string | null;
   sourceType?: string | null;
   showArchived?: boolean;
@@ -17,6 +18,8 @@ export function useSaves(options: UseSavesOptions = {}) {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
+  const folderTagIdsKey = options.folderTagIds?.join(",") || "";
+
   const fetchSaves = useCallback(async () => {
     setLoading(true);
 
@@ -25,7 +28,12 @@ export function useSaves(options: UseSavesOptions = {}) {
       .select("*, save_tags(tag_id, tags(*))")
       .order("created_at", { ascending: false });
 
-    if (options.folderId) {
+    // Only use DB-level folder_id filter when there are no folder tags
+    // (pure one-off folder). When there are folder tags, we fetch all
+    // non-archived saves and filter client-side.
+    const hasFolderTags = options.folderTagIds && options.folderTagIds.length > 0;
+
+    if (options.folderId && !hasFolderTags) {
       query = query.eq("folder_id", options.folderId);
     }
 
@@ -49,8 +57,9 @@ export function useSaves(options: UseSavesOptions = {}) {
       console.error("Failed to fetch saves:", error);
       setSaves([]);
     } else {
-      // If filtering by tag, do it client-side (junction table filtering)
       let results = data || [];
+
+      // Tag-based filtering for selected tag in sidebar
       if (options.tagId) {
         results = results.filter((save: Record<string, unknown>) =>
           (save.save_tags as { tag_id: string }[])?.some(
@@ -60,10 +69,21 @@ export function useSaves(options: UseSavesOptions = {}) {
       }
 
       // Map tags onto saves
-      const mapped = results.map((save: Record<string, unknown>) => ({
+      let mapped = results.map((save: Record<string, unknown>) => ({
         ...save,
         tags: (save.save_tags as { tags: unknown }[])?.map((st) => st.tags).filter(Boolean) || [],
       })) as Save[];
+
+      // Client-side folder filtering: include saves that either
+      // have folder_id matching this folder, or have any of the folder's tags
+      if (options.folderId && hasFolderTags) {
+        const folderTagSet = new Set(options.folderTagIds);
+        mapped = mapped.filter((save) => {
+          if (save.folder_id === options.folderId) return true;
+          const saveTagIds = save.tags?.map((t) => t.id) || [];
+          return saveTagIds.some((id) => folderTagSet.has(id));
+        });
+      }
 
       setSaves(mapped);
     }
@@ -72,6 +92,7 @@ export function useSaves(options: UseSavesOptions = {}) {
   }, [
     supabase,
     options.folderId,
+    folderTagIdsKey,
     options.tagId,
     options.sourceType,
     options.showArchived,
@@ -122,6 +143,13 @@ export function useSaves(options: UseSavesOptions = {}) {
     );
   };
 
+  const setFolderId = async (saveId: string, folderId: string | null) => {
+    await supabase.from("saves").update({ folder_id: folderId }).eq("id", saveId);
+    setSaves((prev) =>
+      prev.map((s) => (s.id === saveId ? { ...s, folder_id: folderId } : s))
+    );
+  };
+
   return {
     saves,
     loading,
@@ -131,5 +159,6 @@ export function useSaves(options: UseSavesOptions = {}) {
     toggleArchive,
     toggleRead,
     updateNotes,
+    setFolderId,
   };
 }

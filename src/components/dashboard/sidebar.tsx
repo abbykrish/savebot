@@ -19,7 +19,7 @@ interface SidebarProps {
   folders: Folder[];
   selectedFolderId: string | null;
   onSelectFolder: (id: string | null) => void;
-  onCreateFolder: (name: string) => void;
+  onCreateFolder: (name: string, tagIds: string[]) => void;
   onDeleteFolder: (id: string) => void;
   tags: Tag[];
   selectedTagId: string | null;
@@ -90,6 +90,7 @@ export function Sidebar({
       <div className="px-4 mt-6">
         <FolderList
           folders={folders}
+          allTags={tags}
           selectedFolderId={selectedFolderId}
           onSelectFolder={onSelectFolder}
           onCreateFolder={onCreateFolder}

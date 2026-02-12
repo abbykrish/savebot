@@ -49,6 +49,7 @@ export interface Folder {
   is_auto: boolean;
   source_tag_id: string | null;
   created_at: string;
+  tag_ids?: string[];
 }
 
 export interface SaveWithTags extends Save {

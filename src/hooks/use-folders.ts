@@ -13,13 +13,20 @@ export function useFolders() {
     setLoading(true);
     const { data, error } = await supabase
       .from("folders")
-      .select("*")
+      .select("*, folder_tags(tag_id)")
       .order("name");
 
     if (error) {
       console.error("Failed to fetch folders:", error);
     } else {
-      setFolders(data || []);
+      const mapped = (data || []).map((f) => {
+        const { folder_tags, ...rest } = f as Record<string, unknown> & { folder_tags?: { tag_id: string }[] };
+        return {
+          ...rest,
+          tag_ids: (folder_tags || []).map((ft) => ft.tag_id),
+        } as Folder;
+      });
+      setFolders(mapped);
     }
     setLoading(false);
   }, [supabase]);
@@ -28,10 +35,13 @@ export function useFolders() {
     fetchFolders();
   }, [fetchFolders]);
 
-  const createFolder = async (name: string, color?: string) => {
+  const createFolder = async (name: string, color?: string, tagIds?: string[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
       .from("folders")
-      .insert({ name, color: color || null, is_auto: false })
+      .insert({ name, color: color || null, is_auto: false, user_id: user.id })
       .select()
       .single();
 
@@ -39,8 +49,18 @@ export function useFolders() {
       console.error("Failed to create folder:", error);
       return null;
     }
-    setFolders((prev) => [...prev, data]);
-    return data;
+
+    if (tagIds && tagIds.length > 0) {
+      const rows = tagIds.map((tag_id) => ({ folder_id: data.id, tag_id }));
+      const { error: tagError } = await supabase.from("folder_tags").insert(rows);
+      if (tagError) {
+        console.error("Failed to insert folder_tags:", tagError);
+      }
+    }
+
+    const newFolder: Folder = { ...data, tag_ids: tagIds || [] };
+    setFolders((prev) => [...prev, newFolder]);
+    return newFolder;
   };
 
   const deleteFolder = async (id: string) => {
@@ -48,5 +68,39 @@ export function useFolders() {
     setFolders((prev) => prev.filter((f) => f.id !== id));
   };
 
-  return { folders, loading, refetch: fetchFolders, createFolder, deleteFolder };
+  const addTagToFolder = async (folderId: string, tagId: string) => {
+    await supabase.from("folder_tags").upsert({ folder_id: folderId, tag_id: tagId });
+    setFolders((prev) =>
+      prev.map((f) =>
+        f.id === folderId
+          ? { ...f, tag_ids: [...(f.tag_ids || []), tagId] }
+          : f
+      )
+    );
+  };
+
+  const removeTagFromFolder = async (folderId: string, tagId: string) => {
+    await supabase
+      .from("folder_tags")
+      .delete()
+      .eq("folder_id", folderId)
+      .eq("tag_id", tagId);
+    setFolders((prev) =>
+      prev.map((f) =>
+        f.id === folderId
+          ? { ...f, tag_ids: (f.tag_ids || []).filter((id) => id !== tagId) }
+          : f
+      )
+    );
+  };
+
+  return {
+    folders,
+    loading,
+    refetch: fetchFolders,
+    createFolder,
+    deleteFolder,
+    addTagToFolder,
+    removeTagFromFolder,
+  };
 }

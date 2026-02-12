@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 
-import { Tag } from "@/lib/types";
+import { Folder, Tag } from "@/lib/types";
 
 // Context so child components can access tag state + management
 interface DashboardContextValue {
@@ -17,6 +17,10 @@ interface DashboardContextValue {
   createTag: (name: string, color?: string) => Promise<Tag | null>;
   addTagToSave: (saveId: string, tagId: string) => Promise<void>;
   removeTagFromSave: (saveId: string, tagId: string) => Promise<void>;
+  folders: Folder[];
+  selectedFolderId: string | null;
+  setSelectedFolderId: (id: string | null) => void;
+  refetchFolders: () => void;
 }
 const DashboardContext = createContext<DashboardContextValue>({
   selectedTagId: null,
@@ -25,6 +29,10 @@ const DashboardContext = createContext<DashboardContextValue>({
   createTag: async () => null,
   addTagToSave: async () => {},
   removeTagFromSave: async () => {},
+  folders: [],
+  selectedFolderId: null,
+  setSelectedFolderId: () => {},
+  refetchFolders: () => {},
 });
 export function useDashboardContext() {
   return useContext(DashboardContext);
@@ -54,7 +62,7 @@ export default function DashboardLayout({
   }, [supabase, router]);
 
   const { tags, refetch: refetchTags, createTag, deleteTag, addTagToSave, removeTagFromSave } = useTags();
-  const { folders, createFolder, deleteFolder } = useFolders();
+  const { folders, createFolder, deleteFolder, refetch: refetchFolders } = useFolders();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -72,7 +80,7 @@ export default function DashboardLayout({
         folders={folders}
         selectedFolderId={selectedFolderId}
         onSelectFolder={setSelectedFolderId}
-        onCreateFolder={(name) => createFolder(name)}
+        onCreateFolder={(name, tagIds) => createFolder(name, undefined, tagIds)}
         onDeleteFolder={(id) => deleteFolder(id)}
         tags={tags}
         selectedTagId={selectedTagId}
@@ -81,7 +89,18 @@ export default function DashboardLayout({
         onDeleteTag={(id) => deleteTag(id)}
         onSignOut={handleSignOut}
       />
-      <DashboardContext.Provider value={{ selectedTagId, allTags: tags, refetchTags, createTag, addTagToSave, removeTagFromSave }}>
+      <DashboardContext.Provider value={{
+        selectedTagId,
+        allTags: tags,
+        refetchTags,
+        createTag,
+        addTagToSave,
+        removeTagFromSave,
+        folders,
+        selectedFolderId,
+        setSelectedFolderId,
+        refetchFolders,
+      }}>
         {children}
       </DashboardContext.Provider>
     </div>

@@ -29,7 +29,14 @@ export function SavesView({
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
-  const { selectedTagId, allTags, refetchTags, createTag, addTagToSave, removeTagFromSave } = useDashboardContext();
+  const { selectedTagId, allTags, refetchTags, createTag, addTagToSave, removeTagFromSave, folders, selectedFolderId } = useDashboardContext();
+
+  // Look up the selected folder's tag_ids for dynamic filtering
+  const selectedFolder = useMemo(
+    () => folders.find((f) => f.id === (folderId ?? selectedFolderId)),
+    [folders, folderId, selectedFolderId]
+  );
+  const folderTagIds = selectedFolder?.tag_ids;
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -51,7 +58,8 @@ export function SavesView({
     toggleArchive,
     toggleRead,
     updateNotes,
-  } = useSaves({ folderId, tagId: selectedTagId, sourceType, showArchived, showFavorites });
+    setFolderId,
+  } = useSaves({ folderId, folderTagIds, tagId: selectedTagId, sourceType, showArchived, showFavorites });
 
   const {
     results: searchResults,
@@ -188,6 +196,7 @@ export function SavesView({
             <ReadingPane
               save={selectedSave}
               allTags={allTags}
+              folders={folders}
               onClose={() => setSelectedSaveId(null)}
               onToggleFavorite={() => toggleFavorite(selectedSave.id)}
               onToggleArchive={() => toggleArchive(selectedSave.id)}
@@ -197,6 +206,7 @@ export function SavesView({
               onAddTag={(tagId) => handleAddTag(selectedSave.id, tagId)}
               onRemoveTag={(tagId) => handleRemoveTag(selectedSave.id, tagId)}
               onCreateAndAddTag={(name) => handleCreateAndAddTag(selectedSave.id, name)}
+              onSetFolder={(fId) => setFolderId(selectedSave.id, fId)}
             />
           </div>
         )}
