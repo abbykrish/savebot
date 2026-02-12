@@ -105,6 +105,16 @@ export function useSaves(options: UseSavesOptions = {}) {
     setSaves((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const toggleRead = async (id: string) => {
+    const save = saves.find((s) => s.id === id);
+    if (!save) return;
+    const newVal = !save.is_read;
+    await supabase.from("saves").update({ is_read: newVal }).eq("id", id);
+    setSaves((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, is_read: newVal } : s))
+    );
+  };
+
   const updateNotes = async (id: string, notes: string) => {
     await supabase.from("saves").update({ notes }).eq("id", id);
     setSaves((prev) =>
@@ -119,6 +129,7 @@ export function useSaves(options: UseSavesOptions = {}) {
     deleteSave,
     toggleFavorite,
     toggleArchive,
+    toggleRead,
     updateNotes,
   };
 }

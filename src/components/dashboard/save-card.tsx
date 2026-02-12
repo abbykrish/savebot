@@ -5,6 +5,8 @@ import { Save, Tag } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   Archive,
+  Circle,
+  CircleCheck,
   ExternalLink,
   FileText,
   Heart,
@@ -19,6 +21,7 @@ interface SaveCardProps {
   onSelect: () => void;
   onToggleFavorite: () => void;
   onToggleArchive: () => void;
+  onToggleRead: () => void;
   onDelete: () => void;
 }
 
@@ -28,6 +31,7 @@ export function SaveCard({
   onSelect,
   onToggleFavorite,
   onToggleArchive,
+  onToggleRead,
   onDelete,
 }: SaveCardProps) {
   const sourceIcon = {
@@ -47,9 +51,17 @@ export function SaveCard({
       )}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <h3 className="font-medium text-sm leading-snug line-clamp-2 flex-1">
-          {save.title}
-        </h3>
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {!save.is_read && (
+            <span className="mt-1.5 h-2 w-2 rounded-full bg-blue-500 shrink-0" />
+          )}
+          <h3 className={cn(
+            "text-sm leading-snug line-clamp-2",
+            save.is_read ? "font-normal text-neutral-600 dark:text-neutral-400" : "font-medium"
+          )}>
+            {save.title}
+          </h3>
+        </div>
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => {
@@ -75,6 +87,20 @@ export function SaveCard({
             className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
           >
             <Archive className="h-3.5 w-3.5 text-neutral-400" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleRead();
+            }}
+            className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            title={save.is_read ? "Mark as unread" : "Mark as read"}
+          >
+            {save.is_read ? (
+              <CircleCheck className="h-3.5 w-3.5 text-green-500" />
+            ) : (
+              <Circle className="h-3.5 w-3.5 text-neutral-400" />
+            )}
           </button>
           <button
             onClick={(e) => {

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Save, Tag } from "@/lib/types";
 import {
   Archive,
+  Circle,
+  CircleCheck,
   ExternalLink,
   Heart,
   Loader2,
@@ -21,6 +23,7 @@ interface ReadingPaneProps {
   onClose: () => void;
   onToggleFavorite: () => void;
   onToggleArchive: () => void;
+  onToggleRead: () => void;
   onUpdateNotes: (notes: string) => void;
   onProcessAi: () => void;
   onAddTag: (tagId: string) => void;
@@ -34,6 +37,7 @@ export function ReadingPane({
   onClose,
   onToggleFavorite,
   onToggleArchive,
+  onToggleRead,
   onUpdateNotes,
   onProcessAi,
   onAddTag,
@@ -84,6 +88,17 @@ export function ReadingPane({
             className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
           >
             <Archive className="h-4 w-4 text-neutral-400" />
+          </button>
+          <button
+            onClick={onToggleRead}
+            className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            title={save.is_read ? "Mark as unread" : "Mark as read"}
+          >
+            {save.is_read ? (
+              <CircleCheck className="h-4 w-4 text-green-500" />
+            ) : (
+              <Circle className="h-4 w-4 text-neutral-400" />
+            )}
           </button>
           <a
             href={save.url}

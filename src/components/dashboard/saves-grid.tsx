@@ -12,6 +12,7 @@ interface SavesGridProps {
   onSelect: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onToggleArchive: (id: string) => void;
+  onToggleRead: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
@@ -22,6 +23,7 @@ export function SavesGrid({
   onSelect,
   onToggleFavorite,
   onToggleArchive,
+  onToggleRead,
   onDelete,
 }: SavesGridProps) {
   if (loading) {
@@ -64,6 +66,7 @@ export function SavesGrid({
           onSelect={() => onSelect(save.id)}
           onToggleFavorite={() => onToggleFavorite(save.id)}
           onToggleArchive={() => onToggleArchive(save.id)}
+          onToggleRead={() => onToggleRead(save.id)}
           onDelete={() => onDelete(save.id)}
         />
       ))}
