@@ -1,4 +1,4 @@
-importScripts("config.js");
+if (typeof importScripts === "function") importScripts("config.js");
 
 // Listen for messages from popup or content script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
