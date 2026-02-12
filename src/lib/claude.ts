@@ -23,7 +23,7 @@ export async function summarizeAndTag(
   // Truncate content to ~8k chars to stay within reasonable token limits
   const truncated = content.slice(0, 8000);
   const tagList = existingTags.length > 0
-    ? `\nExisting tags in the user's library (STRONGLY prefer reusing these over creating new ones): [${existingTags.map(t => `"${t}"`).join(", ")}]`
+    ? `\nExisting tags in the user's library: [${existingTags.map(t => `"${t}"`).join(", ")}]\nReuse an existing tag when it genuinely fits the article's topic. Do NOT force an existing tag if it's not relevant — create a new one instead.`
     : "";
 
   const message = await anthropic.messages.create({
@@ -34,7 +34,7 @@ export async function summarizeAndTag(
         role: "user",
         content: `Analyze this article and return a JSON object with two fields:
 - "summary": A 2-3 sentence summary of the key points.
-- "tags": An array of 2-5 short, lowercase tags. Reuse existing tags whenever possible — only create a new tag if none of the existing ones fit.${tagList}
+- "tags": An array of 2-5 short, lowercase tags that accurately describe the article's topics.${tagList}
 
 Article title: ${title}
 
@@ -70,7 +70,7 @@ export async function autoTag(
 ): Promise<string[]> {
   const truncated = content.slice(0, 4000);
   const tagList = existingTags.length > 0
-    ? `\n\nExisting tags in the user's library (STRONGLY prefer reusing these over creating new ones): [${existingTags.map(t => `"${t}"`).join(", ")}]`
+    ? `\n\nExisting tags in the user's library: [${existingTags.map(t => `"${t}"`).join(", ")}]\nReuse an existing tag when it genuinely fits the article's topic. Do NOT force an existing tag if it's not relevant — create a new one instead.`
     : "";
 
   const message = await anthropic.messages.create({
@@ -79,7 +79,7 @@ export async function autoTag(
     messages: [
       {
         role: "user",
-        content: `Return a JSON array of 2-5 short, lowercase tags for this article. Reuse existing tags whenever possible — only create a new tag if none of the existing ones fit.${tagList}
+        content: `Return a JSON array of 2-5 short, lowercase tags for this article. Use existing tags when they fit, but create new ones when the article covers topics not represented by existing tags.${tagList}
 
 Title: ${title}
 
