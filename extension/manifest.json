@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Save articles, highlights, and PDFs to SaveBot",
   "permissions": ["activeTab", "storage", "cookies"],
-  "host_permissions": ["http://localhost:3000/*", "https://savebot-nine.vercel.app/*", "https://*.vercel.app/*"],
+  "host_permissions": ["http://localhost:3000/*", "https://savebot.app/*", "https://*.vercel.app/*"],
   "background": {
     "service_worker": "background.js"
   },

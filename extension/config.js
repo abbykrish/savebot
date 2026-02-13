@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE = "https://savebot-nine.vercel.app";
+const DEFAULT_API_BASE = "https://savebot.app";
 const DEFAULT_SUPABASE_URL = "https://coirzeiwdjawjcyotdjj.supabase.co";
 
 async function getConfig() {
