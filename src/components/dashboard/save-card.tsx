@@ -10,6 +10,7 @@ import {
   CircleCheck,
   ExternalLink,
   FileText,
+  Globe,
   Heart,
   Highlighter,
   Sparkles,
@@ -36,9 +37,9 @@ export function SaveCard({
   onDelete,
 }: SaveCardProps) {
   const sourceIcon = {
-    article: <FileText className="h-3.5 w-3.5" />,
-    pdf: <FileText className="h-3.5 w-3.5 text-red-500" />,
-    highlight: <Highlighter className="h-3.5 w-3.5 text-yellow-500" />,
+    article: <Globe className="h-3.5 w-3.5" />,
+    pdf: <FileText className="h-3.5 w-3.5" />,
+    highlight: <Highlighter className="h-3.5 w-3.5" />,
   }[save.source_type];
 
   return (
@@ -140,9 +141,17 @@ export function SaveCard({
       </div>
 
       <div className="flex items-center justify-between mt-2">
-        <time className="text-[11px] text-neutral-400">
-          {new Date(save.created_at).toLocaleDateString()}
-        </time>
+        <div className="flex items-center gap-2">
+          <time className="text-[11px] text-neutral-400">
+            {new Date(save.created_at).toLocaleDateString()}
+          </time>
+          {save.highlights && save.highlights.length > 0 && (
+            <span className="flex items-center gap-0.5 text-[11px] text-yellow-600 dark:text-yellow-500">
+              <Highlighter className="h-3 w-3" />
+              {save.highlights.length}
+            </span>
+          )}
+        </div>
         <a
           href={safeHref(save.url)}
           target="_blank"

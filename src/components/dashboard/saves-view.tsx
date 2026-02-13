@@ -8,7 +8,8 @@ import { useSaves } from "@/hooks/use-saves";
 import { useSearch } from "@/hooks/use-search";
 import { useDashboardContext } from "@/app/dashboard/layout";
 import { Save } from "@/lib/types";
-import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ChevronDown, Highlighter } from "lucide-react";
 import { useCallback, useMemo, useRef, useState, useEffect } from "react";
 
 type ReadFilter = "all" | "read" | "unread";
@@ -30,6 +31,7 @@ export function SavesView({
 }: SavesViewProps) {
   const [selectedSaveId, setSelectedSaveId] = useState<string | null>(null);
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
+  const [highlightFilter, setHighlightFilter] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
   const { selectedTagId, allTags, refetchTags, createTag, addTagToSave, removeTagFromSave, folders, selectedFolderId } = useDashboardContext();
@@ -64,7 +66,7 @@ export function SavesView({
     toggleRead,
     updateNotes,
     setFolderId,
-  } = useSaves({ folderId: effectiveFolderId, folderTagIds, tagId: selectedTagId, sourceType, showArchived, showFavorites });
+  } = useSaves({ folderId: effectiveFolderId, folderTagIds, tagId: selectedTagId, sourceType, hasHighlights: highlightFilter, showArchived, showFavorites });
 
   const {
     results: searchResults,
@@ -179,6 +181,19 @@ export function SavesView({
             </div>
           )}
         </div>
+        <button
+          onClick={() => setHighlightFilter(!highlightFilter)}
+          title={highlightFilter ? "Show all saves" : "Show only highlighted"}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors",
+            highlightFilter
+              ? "border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-600"
+              : "border-neutral-200 dark:border-neutral-700 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+          )}
+        >
+          <Highlighter className="h-3.5 w-3.5" />
+          Highlights
+        </button>
       </header>
 
       <div className="flex-1 flex overflow-hidden">

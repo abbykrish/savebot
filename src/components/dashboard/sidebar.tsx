@@ -7,8 +7,8 @@ import {
   BookOpen,
   Download,
   FileText,
+  Globe,
   Heart,
-  Highlighter,
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
@@ -34,9 +34,8 @@ const navItems = [
   { href: "/dashboard", label: "All Saves", icon: <BookOpen className="h-4 w-4" /> },
   { href: "/dashboard/favorites", label: "Favorites", icon: <Heart className="h-4 w-4" /> },
   { href: "/dashboard/archived", label: "Archived", icon: <Archive className="h-4 w-4" /> },
-  { href: "/dashboard/articles", label: "Articles", icon: <FileText className="h-4 w-4" /> },
-  { href: "/dashboard/pdfs", label: "PDFs", icon: <FileText className="h-4 w-4 text-red-500" /> },
-  { href: "/dashboard/highlights", label: "Highlights", icon: <Highlighter className="h-4 w-4 text-yellow-500" /> },
+  { href: "/dashboard/articles", label: "Articles", icon: <Globe className="h-4 w-4" /> },
+  { href: "/dashboard/pdfs", label: "PDFs", icon: <FileText className="h-4 w-4" /> },
 ];
 
 export function Sidebar({

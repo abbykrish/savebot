@@ -9,6 +9,7 @@ interface UseSavesOptions {
   folderTagIds?: string[];
   tagId?: string | null;
   sourceType?: string | null;
+  hasHighlights?: boolean;
   showArchived?: boolean;
   showFavorites?: boolean;
 }
@@ -75,6 +76,11 @@ export function useSaves(options: UseSavesOptions = {}) {
         highlights: (save.highlights as Record<string, unknown>[]) || [],
       })) as unknown as Save[];
 
+      // Filter to only saves with highlights
+      if (options.hasHighlights) {
+        mapped = mapped.filter((save) => (save.highlights?.length ?? 0) > 0);
+      }
+
       // Client-side folder filtering: include saves that either
       // have folder_id matching this folder, or have any of the folder's tags
       if (options.folderId && hasFolderTags) {
@@ -96,6 +102,7 @@ export function useSaves(options: UseSavesOptions = {}) {
     folderTagIdsKey,
     options.tagId,
     options.sourceType,
+    options.hasHighlights,
     options.showArchived,
     options.showFavorites,
   ]);
