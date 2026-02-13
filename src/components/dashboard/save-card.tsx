@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Save, Tag } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { safeHref, safeHostname } from "@/lib/safe-url";
 import {
   Archive,
   Circle,
@@ -129,7 +130,7 @@ export function SaveCard({
       <div className="flex items-center gap-2 flex-wrap">
         <span className="flex items-center gap-1 text-xs text-neutral-400">
           {sourceIcon}
-          {save.site_name || new URL(save.url).hostname}
+          {save.site_name || safeHostname(save.url)}
         </span>
 
         {save.ai_status === "done" && (
@@ -148,7 +149,7 @@ export function SaveCard({
           {new Date(save.created_at).toLocaleDateString()}
         </time>
         <a
-          href={save.url}
+          href={safeHref(save.url)}
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}

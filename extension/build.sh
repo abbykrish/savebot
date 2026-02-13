@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-FILES=(manifest.json config.js background.js content.js popup.html popup.js icon16.png icon48.png icon128.png)
+FILES=(manifest.json config.js background.js popup.html popup.js icon16.png icon48.png icon128.png)
 
 # Chrome — ship manifest.json as-is
 zip -j savebot-chrome.zip "${FILES[@]}"

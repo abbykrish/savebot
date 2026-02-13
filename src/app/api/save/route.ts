@@ -4,7 +4,15 @@ import { extractArticle } from "@/lib/readability";
 import { autoTag } from "@/lib/claude";
 import { ensureTagsExist, linkTagsToSave } from "@/lib/tags";
 import { handleCorsOptions, jsonResponse } from "@/lib/cors";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod/v4";
+
+const saveSchema = z.object({
+  url: z.url().max(2048),
+  title: z.string().max(500).optional(),
+  highlight: z.string().max(10000).optional(),
+});
 
 export async function OPTIONS(request: Request) {
   return handleCorsOptions(request);
@@ -47,11 +55,27 @@ export async function POST(request: Request) {
     }
     const { supabase, user } = auth;
 
-    const body = await request.json();
-    const { url, title: providedTitle, highlight } = body;
+    // Rate limit: 60 saves per hour per user
+    const rl = checkRateLimit(`save:${user.id}`, 60, 3600_000);
+    if (!rl.allowed) {
+      return jsonResponse(
+        { error: "Rate limit exceeded. Try again later." },
+        request,
+        429
+      );
+    }
 
-    if (!url) {
-      return jsonResponse({ error: "URL is required" }, request, 400);
+    const body = await request.json();
+    const parsed = saveSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonResponse({ error: "Invalid input", details: parsed.error.issues }, request, 400);
+    }
+    const { url, title: providedTitle, highlight } = parsed.data;
+
+    // Reject non-http(s) URLs
+    const scheme = new URL(url).protocol;
+    if (scheme !== "http:" && scheme !== "https:") {
+      return jsonResponse({ error: "Only http/https URLs are allowed" }, request, 400);
     }
 
     // Check for duplicate URL

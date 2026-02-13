@@ -1,15 +1,31 @@
 import { NextResponse } from "next/server";
 
-const ALLOWED_ORIGINS = [
-  "chrome-extension://",  // any extension ID during dev
-];
+// Pin to your specific extension IDs once published.
+// For now, use env var or accept any extension origin in development only.
+const CHROME_EXTENSION_ID = process.env.CHROME_EXTENSION_ID;
+const FIREFOX_EXTENSION_ID = process.env.FIREFOX_EXTENSION_ID;
 
 function getAllowedOrigin(request: Request): string | null {
   const origin = request.headers.get("origin") || "";
-  // Allow any chrome extension origin
-  if (origin.startsWith("chrome-extension://")) return origin;
-  // Allow localhost during dev
-  if (origin.startsWith("http://localhost")) return origin;
+
+  // Production: pin to specific extension IDs
+  if (CHROME_EXTENSION_ID && origin === `chrome-extension://${CHROME_EXTENSION_ID}`) {
+    return origin;
+  }
+  if (FIREFOX_EXTENSION_ID && origin === `moz-extension://${FIREFOX_EXTENSION_ID}`) {
+    return origin;
+  }
+
+  // Development: allow any extension origin and localhost:3000
+  if (process.env.NODE_ENV === "development") {
+    if (origin.startsWith("chrome-extension://")) return origin;
+    if (origin.startsWith("moz-extension://")) return origin;
+    if (origin === "http://localhost:3000") return origin;
+  }
+
+  // Allow the production web app origin
+  if (origin === "https://savebot.app") return origin;
+
   return null;
 }
 

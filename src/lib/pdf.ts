@@ -1,16 +1,16 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require("pdf-parse");
+import { safeFetch } from "@/lib/url";
 
 export async function extractPdfText(url: string): Promise<{
   text: string;
 }> {
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       Accept: "application/pdf,*/*",
     },
-    redirect: "follow",
   });
 
   if (!response.ok) {

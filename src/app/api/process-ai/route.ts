@@ -2,6 +2,12 @@ import { createApiClient } from "@/lib/supabase/api";
 import { summarizeAndTag } from "@/lib/claude";
 import { ensureTagsExist, linkTagsToSave } from "@/lib/tags";
 import { handleCorsOptions, jsonResponse } from "@/lib/cors";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { z } from "zod/v4";
+
+const processAiSchema = z.object({
+  save_id: z.uuid(),
+});
 
 export async function OPTIONS(request: Request) {
   return handleCorsOptions(request);
@@ -15,12 +21,22 @@ export async function POST(request: Request) {
     }
     const { supabase, user } = auth;
 
-    const body = await request.json();
-    const { save_id } = body;
-
-    if (!save_id) {
-      return jsonResponse({ error: "save_id is required" }, request, 400);
+    // Rate limit: 20 AI summarizations per hour per user
+    const rl = checkRateLimit(`ai:${user.id}`, 20, 3600_000);
+    if (!rl.allowed) {
+      return jsonResponse(
+        { error: "Rate limit exceeded. Try again later." },
+        request,
+        429
+      );
     }
+
+    const body = await request.json();
+    const parsed = processAiSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonResponse({ error: "Invalid input", details: parsed.error.issues }, request, 400);
+    }
+    const { save_id } = parsed.data;
 
     // Fetch the save
     const { data: save, error: fetchError } = await supabase

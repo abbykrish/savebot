@@ -1,6 +1,13 @@
 import { createApiClient } from "@/lib/supabase/api";
 import { extractPdfText } from "@/lib/pdf";
 import { handleCorsOptions, jsonResponse } from "@/lib/cors";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { z } from "zod/v4";
+
+const savePdfSchema = z.object({
+  url: z.url().max(2048),
+  title: z.string().max(500).optional(),
+});
 
 export async function OPTIONS(request: Request) {
   return handleCorsOptions(request);
@@ -14,12 +21,22 @@ export async function POST(request: Request) {
     }
     const { supabase, user } = auth;
 
-    const body = await request.json();
-    const { url, title: providedTitle } = body;
-
-    if (!url) {
-      return jsonResponse({ error: "URL is required" }, request, 400);
+    // Rate limit: 60 saves per hour per user (shared with /api/save)
+    const rl = checkRateLimit(`save:${user.id}`, 60, 3600_000);
+    if (!rl.allowed) {
+      return jsonResponse(
+        { error: "Rate limit exceeded. Try again later." },
+        request,
+        429
+      );
     }
+
+    const body = await request.json();
+    const parsed = savePdfSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonResponse({ error: "Invalid input", details: parsed.error.issues }, request, 400);
+    }
+    const { url, title: providedTitle } = parsed.data;
 
     // Check for duplicate
     const { data: existing } = await supabase

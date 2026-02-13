@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Folder, Save, Tag } from "@/lib/types";
+import { safeHref } from "@/lib/safe-url";
 import {
   Archive,
   Circle,
@@ -112,7 +113,7 @@ export function ReadingPane({
             )}
           </button>
           <a
-            href={save.url}
+            href={safeHref(save.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -344,7 +345,7 @@ export function ReadingPane({
 
         {/* Link card */}
         <a
-          href={save.url}
+          href={safeHref(save.url)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 p-4 rounded-lg border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors mb-4"

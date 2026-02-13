@@ -1,6 +1,6 @@
 if (typeof importScripts === "function") importScripts("config.js");
 
-// Listen for messages from popup or content script
+// Listen for messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "save") {
     savePage(message.data).then(sendResponse);
@@ -10,6 +10,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     saveHighlight(message.data).then(sendResponse);
     return true;
   }
+});
+
+// Handle Ctrl+Shift+S keyboard shortcut via Commands API
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "save-highlight") return;
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return;
+
+  // Get the selected text from the active tab
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => window.getSelection()?.toString().trim() || "",
+  });
+
+  const selection = result?.result;
+  if (!selection) return;
+
+  const response = await saveHighlight({
+    url: tab.url,
+    title: tab.title,
+    highlight: selection,
+  });
+
+  // Show notification on the page
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: (msg, isError) => {
+      const el = document.createElement("div");
+      el.textContent = msg;
+      Object.assign(el.style, {
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        padding: "12px 20px",
+        borderRadius: "8px",
+        fontSize: "14px",
+        fontFamily: "system-ui, sans-serif",
+        color: "white",
+        backgroundColor: isError ? "#ef4444" : "#22c55e",
+        zIndex: "999999",
+        transition: "opacity 0.3s",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      });
+      document.body.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        setTimeout(() => el.remove(), 300);
+      }, 2000);
+    },
+    args: [
+      response.success ? "Highlight saved!" : "Failed to save highlight",
+      !response.success,
+    ],
+  });
 });
 
 // Helper: make an authenticated API request with automatic token refresh on 401

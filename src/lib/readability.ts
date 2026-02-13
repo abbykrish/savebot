@@ -1,5 +1,6 @@
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
+import { safeFetch } from "@/lib/url";
 
 export interface ExtractedArticle {
   title: string;
@@ -13,13 +14,12 @@ export interface ExtractedArticle {
 export async function extractArticle(
   url: string
 ): Promise<ExtractedArticle | null> {
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       Accept: "text/html,application/xhtml+xml,*/*",
     },
-    redirect: "follow",
   });
 
   if (!response.ok) {
