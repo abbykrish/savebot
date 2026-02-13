@@ -1,5 +1,6 @@
 "use client";
 
+import { QuickSave } from "@/components/dashboard/quick-save";
 import { ReadingPane } from "@/components/dashboard/reading-pane";
 import { SavesGrid } from "@/components/dashboard/saves-grid";
 import { SearchBar } from "@/components/dashboard/search-bar";
@@ -144,6 +145,7 @@ export function SavesView({
         <div className="flex-1 max-w-md">
           <SearchBar onSearch={search} onClear={clearSearch} />
         </div>
+        <QuickSave onSaved={() => { refetchSaves(); refetchTags(); }} />
         <div className="relative" ref={filterRef}>
           <button
             onClick={() => setFilterOpen(!filterOpen)}

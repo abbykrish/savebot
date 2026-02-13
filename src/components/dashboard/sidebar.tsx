@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   Archive,
   BookOpen,
+  Download,
   FileText,
   Heart,
   Highlighter,
@@ -110,7 +111,14 @@ export function Sidebar({
 
       <div className="flex-1" />
 
-      <div className="p-4">
+      <div className="p-4 space-y-1">
+        <Link
+          href="/download"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+        >
+          <Download className="h-4 w-4" />
+          Get Extension
+        </Link>
         <button
           onClick={onSignOut}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"

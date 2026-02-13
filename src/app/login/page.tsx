@@ -98,6 +98,12 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+
+        <p className="text-center text-sm text-neutral-500 mt-3">
+          <Link href="/download" className="text-blue-600 hover:underline">
+            Get the browser extension
+          </Link>
+        </p>
       </div>
     </div>
   );
