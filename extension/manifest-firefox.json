@@ -3,7 +3,7 @@
   "name": "SaveBot",
   "version": "1.0.0",
   "description": "Save articles, highlights, and PDFs to SaveBot",
-  "permissions": ["activeTab", "storage", "scripting"],
+  "permissions": ["activeTab", "storage", "scripting", "contextMenus"],
   "host_permissions": ["http://localhost:3000/*", "https://savebot.app/*", "https://*.vercel.app/*"],
   "browser_specific_settings": {
     "gecko": {
@@ -19,6 +19,12 @@
       "description": "Save highlighted text"
     }
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'"
   },

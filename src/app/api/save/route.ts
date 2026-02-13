@@ -87,6 +87,24 @@ export async function POST(request: Request) {
       .single();
 
     if (existing) {
+      // If this is a highlight on an already-saved URL, add a new highlight row
+      if (highlight) {
+        const { error: hlError } = await supabase
+          .from("highlights")
+          .insert({ save_id: existing.id, text: highlight });
+
+        if (hlError) throw hlError;
+
+        const { data: updated, error } = await supabase
+          .from("saves")
+          .select("*, highlights(*)")
+          .eq("id", existing.id)
+          .single();
+
+        if (error) throw error;
+        return jsonResponse({ save: updated }, request);
+      }
+
       return jsonResponse(
         { error: "Already saved", id: existing.id },
         request,
@@ -102,7 +120,6 @@ export async function POST(request: Request) {
           user_id: user.id,
           url,
           title: providedTitle || url,
-          highlight,
           source_type: "highlight",
           ai_status: "pending",
         })
@@ -110,6 +127,11 @@ export async function POST(request: Request) {
         .single();
 
       if (error) throw error;
+
+      // Insert the highlight row
+      await supabase
+        .from("highlights")
+        .insert({ save_id: save.id, text: highlight });
 
       triggerAutoTag(supabase, user.id, save.id, save.title, highlight);
       return jsonResponse({ save }, request);

@@ -38,10 +38,10 @@ export async function POST(request: Request) {
     }
     const { save_id } = parsed.data;
 
-    // Fetch the save
+    // Fetch the save with highlights
     const { data: save, error: fetchError } = await supabase
       .from("saves")
-      .select("*")
+      .select("*, highlights(*)")
       .eq("id", save_id)
       .eq("user_id", user.id)
       .single();
@@ -50,8 +50,11 @@ export async function POST(request: Request) {
       return jsonResponse({ error: "Save not found" }, request, 404);
     }
 
+    const highlightText = save.highlights?.length
+      ? save.highlights.map((h: { text: string }) => h.text).join("\n\n")
+      : null;
     const textContent =
-      save.content || save.highlight || save.excerpt || save.title;
+      save.content || highlightText || save.excerpt || save.title;
     if (!textContent) {
       return jsonResponse({ error: "No content to summarize" }, request, 400);
     }

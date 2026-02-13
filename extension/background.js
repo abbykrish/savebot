@@ -1,5 +1,85 @@
 if (typeof importScripts === "function") importScripts("config.js");
 
+// Create context menu items on install/update
+chrome.runtime.onInstalled.addListener(() => {
+  // Parent menu — shows on all right-clicks
+  chrome.contextMenus.create({
+    id: "savebot",
+    title: "SaveBot",
+    contexts: ["page", "selection"],
+  });
+
+  // Sub-items
+  chrome.contextMenus.create({
+    id: "save-highlight",
+    parentId: "savebot",
+    title: "Save highlight",
+    contexts: ["selection"],
+  });
+  chrome.contextMenus.create({
+    id: "save-page",
+    parentId: "savebot",
+    title: "Save page",
+    contexts: ["page", "selection"],
+  });
+});
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (!tab?.id) return;
+
+  let response;
+  if (info.menuItemId === "save-highlight" && info.selectionText) {
+    response = await saveHighlight({
+      url: tab.url,
+      title: tab.title,
+      highlight: info.selectionText,
+    });
+  } else if (info.menuItemId === "save-page") {
+    response = await savePage({ url: tab.url, title: tab.title });
+  } else {
+    return;
+  }
+
+  // Show in-page toast notification
+  chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: (msg, isError) => {
+      const el = document.createElement("div");
+      el.textContent = msg;
+      Object.assign(el.style, {
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        padding: "12px 20px",
+        borderRadius: "8px",
+        fontSize: "14px",
+        fontFamily: "system-ui, sans-serif",
+        color: "white",
+        backgroundColor: isError ? "#ef4444" : "#22c55e",
+        zIndex: "999999",
+        transition: "opacity 0.3s",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+      });
+      document.body.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        setTimeout(() => el.remove(), 300);
+      }, 2000);
+    },
+    args: [
+      response.success
+        ? info.menuItemId === "save-highlight"
+          ? "Highlight saved!"
+          : "Page saved!"
+        : response.duplicate
+          ? "Already saved"
+          : (response.error || "Failed to save"),
+      !response.success && !response.duplicate,
+    ],
+  });
+});
+
 // Listen for messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "save") {

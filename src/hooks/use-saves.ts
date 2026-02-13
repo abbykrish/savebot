@@ -25,7 +25,7 @@ export function useSaves(options: UseSavesOptions = {}) {
 
     let query = supabase
       .from("saves")
-      .select("*, save_tags(tag_id, tags(*))")
+      .select("*, save_tags(tag_id, tags(*)), highlights(*)")
       .order("created_at", { ascending: false });
 
     // Only use DB-level folder_id filter when there are no folder tags
@@ -72,7 +72,8 @@ export function useSaves(options: UseSavesOptions = {}) {
       let mapped = results.map((save: Record<string, unknown>) => ({
         ...save,
         tags: (save.save_tags as { tags: unknown }[])?.map((st) => st.tags).filter(Boolean) || [],
-      })) as Save[];
+        highlights: (save.highlights as Record<string, unknown>[]) || [],
+      })) as unknown as Save[];
 
       // Client-side folder filtering: include saves that either
       // have folder_id matching this folder, or have any of the folder's tags

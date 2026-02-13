@@ -14,6 +14,7 @@ interface SavesGridProps {
   onToggleArchive: (id: string) => void;
   onToggleRead: (id: string) => void;
   onDelete: (id: string) => void;
+  emptyMessage?: string;
 }
 
 export function SavesGrid({
@@ -25,6 +26,7 @@ export function SavesGrid({
   onToggleArchive,
   onToggleRead,
   onDelete,
+  emptyMessage,
 }: SavesGridProps) {
   if (loading) {
     return (
@@ -50,7 +52,7 @@ export function SavesGrid({
         <Inbox className="h-12 w-12 mb-3" />
         <p className="text-sm font-medium">No saves yet</p>
         <p className="text-xs mt-1">
-          Use the browser extension to save articles
+          {emptyMessage ?? "Save a URL above or use the browser extension"}
         </p>
       </div>
     );

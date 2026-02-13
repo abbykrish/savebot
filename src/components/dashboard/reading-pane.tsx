@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Folder, Save, Tag } from "@/lib/types";
+import { Folder, Highlight, Save, Tag } from "@/lib/types";
 import { safeHref } from "@/lib/safe-url";
 import {
   Archive,
@@ -336,11 +336,18 @@ export function ReadingPane({
           </div>
         )}
 
-        {/* Highlight */}
-        {save.highlight && (
-          <blockquote className="border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 p-4 rounded-r-lg mb-4 italic text-sm">
-            {save.highlight}
-          </blockquote>
+        {/* Highlights */}
+        {save.highlights && save.highlights.length > 0 && (
+          <div className="space-y-3 mb-4">
+            {save.highlights.map((hl: Highlight) => (
+              <blockquote key={hl.id} className="border-l-4 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20 p-4 rounded-r-lg italic text-sm">
+                <p>{hl.text}</p>
+                <time className="block mt-2 text-[11px] text-neutral-400 not-italic">
+                  {new Date(hl.created_at).toLocaleDateString()}
+                </time>
+              </blockquote>
+            ))}
+          </div>
         )}
 
         {/* Link card */}

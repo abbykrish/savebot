@@ -1,6 +1,13 @@
 export type SourceType = "article" | "pdf" | "highlight";
 export type AiStatus = "pending" | "processing" | "done" | "failed";
 
+export interface Highlight {
+  id: string;
+  save_id: string;
+  text: string;
+  created_at: string;
+}
+
 export interface Save {
   id: string;
   user_id: string;
@@ -9,7 +16,6 @@ export interface Save {
   content: string | null;
   content_markdown: string | null;
   excerpt: string | null;
-  highlight: string | null;
   summary: string | null;
   notes: string | null;
   site_name: string | null;
@@ -25,6 +31,7 @@ export interface Save {
   created_at: string;
   updated_at: string;
   tags?: Tag[];
+  highlights?: Highlight[];
 }
 
 export interface Tag {

@@ -18,6 +18,7 @@ interface SavesViewProps {
   sourceType?: string | null;
   showArchived?: boolean;
   showFavorites?: boolean;
+  emptyMessage?: string;
 }
 
 export function SavesView({
@@ -25,6 +26,7 @@ export function SavesView({
   sourceType,
   showArchived,
   showFavorites,
+  emptyMessage,
 }: SavesViewProps) {
   const [selectedSaveId, setSelectedSaveId] = useState<string | null>(null);
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
@@ -192,6 +194,7 @@ export function SavesView({
             onToggleArchive={toggleArchive}
             onToggleRead={toggleRead}
             onDelete={handleDelete}
+            emptyMessage={emptyMessage}
           />
         </div>
 

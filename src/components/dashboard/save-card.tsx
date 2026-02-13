@@ -121,9 +121,14 @@ export function SaveCard({
         </p>
       )}
 
-      {save.highlight && (
+      {save.highlights && save.highlights.length > 0 && (
         <p className="text-xs text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 p-2 rounded mb-2 line-clamp-2 italic">
-          &ldquo;{save.highlight}&rdquo;
+          &ldquo;{save.highlights[0].text}&rdquo;
+          {save.highlights.length > 1 && (
+            <span className="not-italic text-yellow-600 dark:text-yellow-500 ml-1">
+              +{save.highlights.length - 1} more
+            </span>
+          )}
         </p>
       )}
 

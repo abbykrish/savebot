@@ -1,7 +1,8 @@
 -- SaveBot schema — run in Supabase SQL Editor
 -- Uses existing Supabase auth (auth.users)
 
--- Drop old Stash tables if they exist
+-- Drop old tables if they exist
+drop table if exists highlights cascade;
 drop table if exists save_tags cascade;
 drop table if exists tags cascade;
 drop table if exists saves cascade;
@@ -31,7 +32,6 @@ create table saves (
   content text,
   content_markdown text,
   excerpt text,
-  highlight text,
   summary text,
   notes text,
   site_name text,
@@ -78,6 +78,22 @@ create policy "Users manage own save_tags" on save_tags
   for all using (
     exists (select 1 from saves where saves.id = save_id and saves.user_id = auth.uid())
   );
+
+-- Highlights (many-to-one with saves)
+create table highlights (
+  id uuid primary key default gen_random_uuid(),
+  save_id uuid references saves(id) on delete cascade not null,
+  text text not null,
+  created_at timestamptz default now()
+);
+
+alter table highlights enable row level security;
+create policy "Users manage own highlights" on highlights
+  for all using (
+    exists (select 1 from saves where saves.id = save_id and saves.user_id = auth.uid())
+  );
+
+create index highlights_save_id_idx on highlights(save_id);
 
 -- Full-text search index
 alter table saves add column if not exists fts tsvector
