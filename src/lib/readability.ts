@@ -31,15 +31,29 @@ export async function extractArticle(
   const reader = new Readability(dom.window.document);
   const article = reader.parse();
 
+  // Fallback: grab <title> and og:title even if Readability can't parse the article
+  const docTitle = dom.window.document.querySelector("title")?.textContent?.trim() || "";
+  const ogTitle = dom.window.document.querySelector('meta[property="og:title"]')?.getAttribute("content")?.trim() || "";
+  const ogDescription = dom.window.document.querySelector('meta[property="og:description"]')?.getAttribute("content")?.trim() || "";
+  const ogSiteName = dom.window.document.querySelector('meta[property="og:site_name"]')?.getAttribute("content")?.trim() || null;
+
   if (!article) {
-    return null;
+    if (!docTitle && !ogTitle) return null;
+    return {
+      title: ogTitle || docTitle,
+      content: "",
+      excerpt: ogDescription,
+      siteName: ogSiteName,
+      byline: null,
+      length: 0,
+    };
   }
 
   return {
-    title: article.title || "",
+    title: article.title || ogTitle || docTitle,
     content: article.textContent || "",
-    excerpt: article.excerpt || "",
-    siteName: article.siteName || null,
+    excerpt: article.excerpt || ogDescription || "",
+    siteName: article.siteName || ogSiteName,
     byline: article.byline || null,
     length: article.length || 0,
   };
