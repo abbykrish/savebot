@@ -196,7 +196,7 @@ export function SavesView({
         </div>
 
         {selectedSave && (
-          <div className="w-full lg:w-[360px] xl:w-[400px] shrink-0">
+          <div className="w-full lg:w-[400px] xl:w-[440px] shrink-0">
             <ReadingPane
               save={selectedSave}
               allTags={allTags}
