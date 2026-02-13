@@ -16,10 +16,12 @@ function getAllowedOrigin(request: Request): string | null {
     return origin;
   }
 
-  // Development: allow any extension origin and localhost:3000
+  // Allow any extension origin if IDs aren't pinned yet, or in development
+  if (!CHROME_EXTENSION_ID && origin.startsWith("chrome-extension://")) return origin;
+  if (!FIREFOX_EXTENSION_ID && origin.startsWith("moz-extension://")) return origin;
+
+  // Localhost in development only
   if (process.env.NODE_ENV === "development") {
-    if (origin.startsWith("chrome-extension://")) return origin;
-    if (origin.startsWith("moz-extension://")) return origin;
     if (origin === "http://localhost:3000") return origin;
   }
 
