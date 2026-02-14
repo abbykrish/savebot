@@ -65,50 +65,50 @@ export function Sidebar({
         <h1 className="text-lg font-bold">SaveBot</h1>
       </div>
 
-      <nav className="px-2 space-y-0.5">
-        {navItems.map(({ href, label, icon }) => (
-          <Link
-            key={href}
-            href={href}
-            onClick={() => {
-              onSelectFolder(null);
-              onSelectTag(null);
-            }}
-            className={cn(
-              "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
-              isActive(href)
-                ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium shadow-sm"
-                : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            )}
-          >
-            {icon}
-            {label}
-          </Link>
-        ))}
-      </nav>
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <nav className="px-2 space-y-0.5">
+          {navItems.map(({ href, label, icon }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => {
+                onSelectFolder(null);
+                onSelectTag(null);
+              }}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
+                isActive(href)
+                  ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium shadow-sm"
+                  : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              )}
+            >
+              {icon}
+              {label}
+            </Link>
+          ))}
+        </nav>
 
-      <div className="px-4 mt-6">
-        <FolderList
-          folders={folders}
-          allTags={tags}
-          selectedFolderId={selectedFolderId}
-          onSelectFolder={onSelectFolder}
-          onCreateFolder={onCreateFolder}
-          onDeleteFolder={onDeleteFolder}
-        />
+        <div className="px-4 mt-6">
+          <FolderList
+            folders={folders}
+            allTags={tags}
+            selectedFolderId={selectedFolderId}
+            onSelectFolder={onSelectFolder}
+            onCreateFolder={onCreateFolder}
+            onDeleteFolder={onDeleteFolder}
+          />
+        </div>
+
+        <div className="px-4 mt-6 pb-4">
+          <TagManager
+            tags={tags}
+            selectedTagId={selectedTagId}
+            onSelectTag={onSelectTag}
+            onCreateTag={onCreateTag}
+            onDeleteTag={onDeleteTag}
+          />
+        </div>
       </div>
-
-      <div className="px-4 mt-6">
-        <TagManager
-          tags={tags}
-          selectedTagId={selectedTagId}
-          onSelectTag={onSelectTag}
-          onCreateTag={onCreateTag}
-          onDeleteTag={onDeleteTag}
-        />
-      </div>
-
-      <div className="flex-1" />
 
       <div className="p-4 space-y-1">
         <Link
