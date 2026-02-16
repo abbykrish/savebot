@@ -9,10 +9,12 @@ import { useSearch } from "@/hooks/use-search";
 import { useDashboardContext } from "@/app/dashboard/layout";
 import { Save } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Highlighter } from "lucide-react";
-import { useCallback, useMemo, useRef, useState, useEffect } from "react";
+import { FilterDropdown } from "./filter-dropdown";
+import { ArrowDownUp, Highlighter, Menu } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 type ReadFilter = "all" | "read" | "unread";
+type SortOption = "newest" | "oldest" | "title-asc" | "title-desc" | "site";
 
 interface SavesViewProps {
   folderId?: string | null;
@@ -31,10 +33,9 @@ export function SavesView({
 }: SavesViewProps) {
   const [selectedSaveId, setSelectedSaveId] = useState<string | null>(null);
   const [readFilter, setReadFilter] = useState<ReadFilter>("all");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [highlightFilter, setHighlightFilter] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
-  const { selectedTagId, allTags, refetchTags, createTag, addTagToSave, removeTagFromSave, folders, selectedFolderId } = useDashboardContext();
+  const { selectedTagId, allTags, refetchTags, createTag, addTagToSave, removeTagFromSave, folders, selectedFolderId, toggleSidebar } = useDashboardContext();
 
   // Look up the selected folder's tag_ids for dynamic filtering
   const selectedFolder = useMemo(
@@ -42,17 +43,6 @@ export function SavesView({
     [folders, folderId, selectedFolderId]
   );
   const folderTagIds = selectedFolder?.tag_ids;
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
-        setFilterOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
 
   const effectiveFolderId = folderId ?? selectedFolderId;
 
@@ -77,10 +67,29 @@ export function SavesView({
   } = useSearch();
 
   const filteredSaves = useMemo(() => {
-    if (readFilter === "unread") return saves.filter((s) => !s.is_read);
-    if (readFilter === "read") return saves.filter((s) => s.is_read);
-    return saves;
-  }, [saves, readFilter]);
+    let result = saves;
+    if (readFilter === "unread") result = result.filter((s) => !s.is_read);
+    if (readFilter === "read") result = result.filter((s) => s.is_read);
+
+    if (sortBy !== "newest") {
+      result = [...result].sort((a, b) => {
+        switch (sortBy) {
+          case "oldest":
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          case "title-asc":
+            return a.title.localeCompare(b.title);
+          case "title-desc":
+            return b.title.localeCompare(a.title);
+          case "site":
+            return (a.site_name || "").localeCompare(b.site_name || "");
+          default:
+            return 0;
+        }
+      });
+    }
+
+    return result;
+  }, [saves, readFilter, sortBy]);
 
   const readCount = useMemo(() => saves.filter((s) => s.is_read).length, [saves]);
   const unreadCount = useMemo(() => saves.filter((s) => !s.is_read).length, [saves]);
@@ -145,42 +154,26 @@ export function SavesView({
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      <header className="flex items-center gap-4 px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
-        <div className="flex-1 max-w-md">
+      <header className="flex flex-wrap items-center gap-3 px-3 sm:px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+        <button
+          onClick={toggleSidebar}
+          className="lg:hidden p-2 -ml-1 rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="flex-1 min-w-[180px] max-w-md">
           <SearchBar onSearch={search} onClear={clearSearch} />
         </div>
         <QuickSave onSaved={() => { refetchSaves(); refetchTags(); }} />
-        <div className="relative" ref={filterRef}>
-          <button
-            onClick={() => setFilterOpen(!filterOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-          >
-            {readFilter === "all" ? "All" : readFilter === "read" ? "Read" : "Unread"}
-            <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
-          </button>
-          {filterOpen && (
-            <div className="absolute right-0 top-full mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-10">
-              {([
-                { value: "all" as ReadFilter, label: "All", count: saves.length },
-                { value: "unread" as ReadFilter, label: "Unread", count: unreadCount },
-                { value: "read" as ReadFilter, label: "Read", count: readCount },
-              ]).map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => { setReadFilter(opt.value); setFilterOpen(false); }}
-                  className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between first:rounded-t-lg last:rounded-b-lg ${
-                    readFilter === opt.value
-                      ? "bg-neutral-100 dark:bg-neutral-800 font-medium"
-                      : "hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                  }`}
-                >
-                  {opt.label}
-                  <span className="text-xs text-neutral-400">{opt.count}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <FilterDropdown
+          value={readFilter}
+          onChange={setReadFilter}
+          options={[
+            { value: "all", label: "All", count: saves.length },
+            { value: "unread", label: "Unread", count: unreadCount },
+            { value: "read", label: "Read", count: readCount },
+          ]}
+        />
         <button
           onClick={() => setHighlightFilter(!highlightFilter)}
           title={highlightFilter ? "Show all saves" : "Show only highlighted"}
@@ -192,13 +185,25 @@ export function SavesView({
           )}
         >
           <Highlighter className="h-3.5 w-3.5" />
-          Highlights
+          <span className="hidden sm:inline">Highlights</span>
         </button>
+        <FilterDropdown
+          value={sortBy}
+          onChange={setSortBy}
+          icon={<ArrowDownUp className="h-3.5 w-3.5 text-neutral-400" />}
+          options={[
+            { value: "newest", label: "Newest" },
+            { value: "oldest", label: "Oldest" },
+            { value: "title-asc", label: "Title A–Z" },
+            { value: "title-desc", label: "Title Z–A" },
+            { value: "site", label: "Site" },
+          ]}
+        />
       </header>
 
       <div className="flex-1 flex overflow-hidden">
         <div
-          className={`flex-1 overflow-y-auto p-6 ${selectedSave ? "hidden lg:block" : ""}`}
+          className={`flex-1 overflow-y-auto p-3 sm:p-6 ${selectedSave ? "hidden lg:block" : ""}`}
         >
           <SavesGrid
             saves={displayedSaves}

@@ -10,6 +10,7 @@ import {
   Globe,
   Heart,
   LogOut,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +29,7 @@ interface SidebarProps {
   onCreateTag: (name: string) => void;
   onDeleteTag: (id: string) => void;
   onSignOut: () => void;
+  onClose?: () => void;
 }
 
 const navItems = [
@@ -50,6 +52,7 @@ export function Sidebar({
   onCreateTag,
   onDeleteTag,
   onSignOut,
+  onClose,
 }: SidebarProps) {
   const pathname = usePathname();
 
@@ -61,8 +64,16 @@ export function Sidebar({
 
   return (
     <aside className="w-60 h-full flex flex-col bg-neutral-50 dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800">
-      <div className="p-4 pb-2">
+      <div className="p-4 pb-2 flex items-center justify-between">
         <h1 className="text-lg font-bold">SaveBot</h1>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1 rounded-md text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto min-h-0">
@@ -74,6 +85,7 @@ export function Sidebar({
               onClick={() => {
                 onSelectFolder(null);
                 onSelectTag(null);
+                onClose?.();
               }}
               className={cn(
                 "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors",
@@ -93,7 +105,7 @@ export function Sidebar({
             folders={folders}
             allTags={tags}
             selectedFolderId={selectedFolderId}
-            onSelectFolder={onSelectFolder}
+            onSelectFolder={(id) => { onSelectFolder(id); onClose?.(); }}
             onCreateFolder={onCreateFolder}
             onDeleteFolder={onDeleteFolder}
           />
@@ -103,7 +115,7 @@ export function Sidebar({
           <TagManager
             tags={tags}
             selectedTagId={selectedTagId}
-            onSelectTag={onSelectTag}
+            onSelectTag={(id) => { onSelectTag(id); onClose?.(); }}
             onCreateTag={onCreateTag}
             onDeleteTag={onDeleteTag}
           />

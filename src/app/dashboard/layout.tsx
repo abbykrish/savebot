@@ -5,9 +5,10 @@ import { useFolders } from "@/hooks/use-folders";
 import { useTags } from "@/hooks/use-tags";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { Folder, Tag } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 // Context so child components can access tag state + management
 interface DashboardContextValue {
@@ -21,6 +22,7 @@ interface DashboardContextValue {
   selectedFolderId: string | null;
   setSelectedFolderId: (id: string | null) => void;
   refetchFolders: () => void;
+  toggleSidebar: () => void;
 }
 const DashboardContext = createContext<DashboardContextValue>({
   selectedTagId: null,
@@ -33,6 +35,7 @@ const DashboardContext = createContext<DashboardContextValue>({
   selectedFolderId: null,
   setSelectedFolderId: () => {},
   refetchFolders: () => {},
+  toggleSidebar: () => {},
 });
 export function useDashboardContext() {
   return useContext(DashboardContext);
@@ -46,6 +49,9 @@ export default function DashboardLayout({
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
   const router = useRouter();
   const supabase = createClient();
 
@@ -76,19 +82,39 @@ export default function DashboardLayout({
 
   return (
     <div className="h-screen flex overflow-hidden">
-      <Sidebar
-        folders={folders}
-        selectedFolderId={selectedFolderId}
-        onSelectFolder={setSelectedFolderId}
-        onCreateFolder={(name, tagIds) => createFolder(name, undefined, tagIds)}
-        onDeleteFolder={(id) => deleteFolder(id)}
-        tags={tags}
-        selectedTagId={selectedTagId}
-        onSelectTag={setSelectedTagId}
-        onCreateTag={(name) => createTag(name)}
-        onDeleteTag={(id) => deleteTag(id)}
-        onSignOut={handleSignOut}
-      />
+      {/* Backdrop overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
+      {/* Sidebar: hidden on mobile by default, shown as fixed overlay when open */}
+      <div
+        className={cn(
+          "lg:relative lg:flex lg:z-auto",
+          sidebarOpen
+            ? "fixed inset-y-0 left-0 z-50 flex"
+            : "hidden"
+        )}
+      >
+        <Sidebar
+          folders={folders}
+          selectedFolderId={selectedFolderId}
+          onSelectFolder={setSelectedFolderId}
+          onCreateFolder={(name, tagIds) => createFolder(name, undefined, tagIds)}
+          onDeleteFolder={(id) => deleteFolder(id)}
+          tags={tags}
+          selectedTagId={selectedTagId}
+          onSelectTag={setSelectedTagId}
+          onCreateTag={(name) => createTag(name)}
+          onDeleteTag={(id) => deleteTag(id)}
+          onSignOut={handleSignOut}
+          onClose={closeSidebar}
+        />
+      </div>
+
       <DashboardContext.Provider value={{
         selectedTagId,
         allTags: tags,
@@ -100,6 +126,7 @@ export default function DashboardLayout({
         selectedFolderId,
         setSelectedFolderId,
         refetchFolders,
+        toggleSidebar,
       }}>
         {children}
       </DashboardContext.Provider>
