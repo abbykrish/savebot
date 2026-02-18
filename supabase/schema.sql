@@ -79,6 +79,19 @@ create policy "Users manage own save_tags" on save_tags
     exists (select 1 from saves where saves.id = save_id and saves.user_id = auth.uid())
   );
 
+-- Folder-Tags junction
+create table folder_tags (
+  folder_id uuid references folders(id) on delete cascade not null,
+  tag_id uuid references tags(id) on delete cascade not null,
+  primary key (folder_id, tag_id)
+);
+
+alter table folder_tags enable row level security;
+create policy "Users manage own folder_tags" on folder_tags
+  for all using (
+    exists (select 1 from folders where folders.id = folder_id and folders.user_id = auth.uid())
+  );
+
 -- Highlights (many-to-one with saves)
 create table highlights (
   id uuid primary key default gen_random_uuid(),
