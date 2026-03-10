@@ -28,7 +28,7 @@ interface ReadingPaneProps {
   onToggleArchive: () => void;
   onToggleRead: () => void;
   onUpdateNotes: (notes: string) => void;
-  onProcessAi: () => void;
+  onProcessAi: () => Promise<void> | void;
   onAddTag: (tagId: string) => void;
   onRemoveTag: (tagId: string) => void;
   onCreateAndAddTag: (name: string) => void;
@@ -58,8 +58,13 @@ export function ReadingPane({
 
   const handleProcessAi = async () => {
     setAiLoading(true);
-    onProcessAi();
-    setTimeout(() => setAiLoading(false), 3000);
+    try {
+      await onProcessAi();
+    } catch (err) {
+      console.error("AI processing failed:", err);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   // Tags not already on this save, filtered by search
@@ -86,6 +91,7 @@ export function ReadingPane({
           <button
             onClick={onToggleFavorite}
             className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label={save.is_favorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart
               className={
@@ -98,6 +104,7 @@ export function ReadingPane({
           <button
             onClick={onToggleArchive}
             className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label={save.is_archived ? "Unarchive" : "Archive"}
           >
             <Archive className="h-4 w-4 text-neutral-400" />
           </button>
@@ -124,6 +131,7 @@ export function ReadingPane({
         <button
           onClick={onClose}
           className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          aria-label="Close reading pane"
         >
           <X className="h-4 w-4 text-neutral-400" />
         </button>
@@ -325,7 +333,7 @@ export function ReadingPane({
             ) : (
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
             )}
-            {aiLoading ? "Summarizing..." : "Summarize with AI"}
+            {aiLoading ? "Summarizing..." : save.ai_status === "failed" ? "Retry AI Summary" : "Summarize with AI"}
           </Button>
         )}
 

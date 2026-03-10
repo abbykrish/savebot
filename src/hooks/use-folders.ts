@@ -64,7 +64,11 @@ export function useFolders() {
   };
 
   const deleteFolder = async (id: string) => {
-    await supabase.from("folders").delete().eq("id", id);
+    const { error } = await supabase.from("folders").delete().eq("id", id);
+    if (error) {
+      console.error("Failed to delete folder:", error);
+      return;
+    }
     setFolders((prev) => prev.filter((f) => f.id !== id));
   };
 

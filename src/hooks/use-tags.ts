@@ -44,20 +44,30 @@ export function useTags() {
   };
 
   const deleteTag = async (id: string) => {
-    await supabase.from("tags").delete().eq("id", id);
+    const { error } = await supabase.from("tags").delete().eq("id", id);
+    if (error) {
+      console.error("Failed to delete tag:", error);
+      return;
+    }
     setTags((prev) => prev.filter((t) => t.id !== id));
   };
 
   const addTagToSave = async (saveId: string, tagId: string) => {
-    await supabase.from("save_tags").upsert({ save_id: saveId, tag_id: tagId });
+    const { error } = await supabase.from("save_tags").upsert({ save_id: saveId, tag_id: tagId });
+    if (error) {
+      console.error("Failed to add tag to save:", error);
+    }
   };
 
   const removeTagFromSave = async (saveId: string, tagId: string) => {
-    await supabase
+    const { error } = await supabase
       .from("save_tags")
       .delete()
       .eq("save_id", saveId)
       .eq("tag_id", tagId);
+    if (error) {
+      console.error("Failed to remove tag from save:", error);
+    }
   };
 
   return { tags, loading, refetch: fetchTags, createTag, deleteTag, addTagToSave, removeTagFromSave };

@@ -71,6 +71,7 @@ export function SaveCard({
               onToggleFavorite();
             }}
             className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label={save.is_favorite ? "Remove from favorites" : "Add to favorites"}
           >
             <Heart
               className={cn(
@@ -87,6 +88,7 @@ export function SaveCard({
               onToggleArchive();
             }}
             className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label={save.is_archived ? "Unarchive" : "Archive"}
           >
             <Archive className="h-3.5 w-3.5 text-neutral-400" />
           </button>
@@ -97,6 +99,7 @@ export function SaveCard({
             }}
             className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800"
             title={save.is_read ? "Mark as unread" : "Mark as read"}
+            aria-label={save.is_read ? "Mark as unread" : "Mark as read"}
           >
             {save.is_read ? (
               <CircleCheck className="h-3.5 w-3.5 text-green-500" />
@@ -107,9 +110,12 @@ export function SaveCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete();
+              if (window.confirm("Delete this save? This cannot be undone.")) {
+                onDelete();
+              }
             }}
             className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-950"
+            aria-label="Delete save"
           >
             <Trash2 className="h-3.5 w-3.5 text-neutral-400 hover:text-red-500" />
           </button>

@@ -65,35 +65,44 @@ export async function POST(request: Request) {
       .update({ ai_status: "processing" })
       .eq("id", save_id);
 
-    // Fetch existing tags so Claude can reuse them
-    const { data: userTags } = await supabase
-      .from("tags")
-      .select("name")
-      .eq("user_id", user.id);
-    const existingTagNames = (userTags || []).map((t: { name: string }) => t.name);
+    try {
+      // Fetch existing tags so Claude can reuse them
+      const { data: userTags } = await supabase
+        .from("tags")
+        .select("name")
+        .eq("user_id", user.id);
+      const existingTagNames = (userTags || []).map((t: { name: string }) => t.name);
 
-    // Call Claude
-    const result = await summarizeAndTag(save.title, textContent, existingTagNames);
+      // Call Claude
+      const result = await summarizeAndTag(save.title, textContent, existingTagNames);
 
-    // Update save with summary
-    await supabase
-      .from("saves")
-      .update({
+      // Update save with summary
+      await supabase
+        .from("saves")
+        .update({
+          summary: result.summary,
+          ai_status: "done",
+        })
+        .eq("id", save_id);
+
+      // Create tags and link them
+      if (result.tags.length > 0) {
+        const tagIds = await ensureTagsExist(supabase, user.id, result.tags);
+        await linkTagsToSave(supabase, save_id, tagIds);
+      }
+
+      return jsonResponse({
         summary: result.summary,
-        ai_status: "done",
-      })
-      .eq("id", save_id);
-
-    // Create tags and link them
-    if (result.tags.length > 0) {
-      const tagIds = await ensureTagsExist(supabase, user.id, result.tags);
-      await linkTagsToSave(supabase, save_id, tagIds);
+        tags: result.tags,
+      }, request);
+    } catch (aiErr) {
+      console.error("AI processing failed for save:", save_id, aiErr);
+      await supabase
+        .from("saves")
+        .update({ ai_status: "failed" })
+        .eq("id", save_id);
+      return jsonResponse({ error: "AI processing failed" }, request, 500);
     }
-
-    return jsonResponse({
-      summary: result.summary,
-      tags: result.tags,
-    }, request);
   } catch (err) {
     console.error("Process AI error:", err);
     return jsonResponse({ error: "AI processing failed" }, request, 500);
