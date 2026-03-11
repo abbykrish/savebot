@@ -10,6 +10,33 @@ const loginBtn = document.getElementById("loginBtn");
 const logoutBtn = document.getElementById("logoutBtn");
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
+const autoSaveToggle = document.getElementById("autoSaveToggle");
+const autoSaveMinutesInput = document.getElementById("autoSaveMinutes");
+const autoSaveMinutesRow = document.getElementById("autoSaveMinutesRow");
+
+// ── Auto-save settings ──────────────────────────────────────────────
+
+(async () => {
+  const { autoSaveEnabled, autoSaveMinutes } =
+    await chrome.storage.local.get(["autoSaveEnabled", "autoSaveMinutes"]);
+  autoSaveToggle.checked = !!autoSaveEnabled;
+  autoSaveMinutesInput.value = autoSaveMinutes || 3;
+  autoSaveMinutesRow.style.display = autoSaveEnabled ? "flex" : "none";
+})();
+
+autoSaveToggle.addEventListener("change", () => {
+  const enabled = autoSaveToggle.checked;
+  chrome.storage.local.set({ autoSaveEnabled: enabled });
+  autoSaveMinutesRow.style.display = enabled ? "flex" : "none";
+});
+
+autoSaveMinutesInput.addEventListener("change", () => {
+  let val = parseInt(autoSaveMinutesInput.value, 10);
+  if (isNaN(val) || val < 1) val = 1;
+  if (val > 30) val = 30;
+  autoSaveMinutesInput.value = val;
+  chrome.storage.local.set({ autoSaveMinutes: val });
+});
 
 // Check auth state on load
 (async () => {

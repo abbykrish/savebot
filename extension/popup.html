@@ -116,6 +116,42 @@
         width: auto;
         text-decoration: underline;
       }
+      .auto-save-settings {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb;
+      }
+      .auto-save-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #374151;
+      }
+      .auto-save-row input[type="checkbox"] {
+        margin: 0;
+        cursor: pointer;
+      }
+      .auto-save-minutes {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .auto-save-minutes input[type="number"] {
+        width: 48px;
+        padding: 4px 6px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        font-size: 12px;
+        text-align: center;
+      }
+      .auto-save-minutes input[type="number"]:focus {
+        outline: none;
+        border-color: #2563eb;
+      }
       .settings {
         margin-top: 12px;
         text-align: center;
@@ -151,6 +187,17 @@
       <button class="save-btn" id="saveBtn" disabled>Save this page</button>
       <div style="margin-top:8px;text-align:right">
         <button class="logout-btn" id="logoutBtn">Sign out</button>
+      </div>
+      <div class="auto-save-settings">
+        <label class="auto-save-row">
+          <input type="checkbox" id="autoSaveToggle" />
+          Auto-save after lingering
+        </label>
+        <div class="auto-save-minutes" id="autoSaveMinutesRow" style="display:none">
+          Save after
+          <input type="number" id="autoSaveMinutes" min="1" max="30" value="3" />
+          minutes of active reading
+        </div>
       </div>
     </div>
 

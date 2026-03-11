@@ -80,7 +80,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   });
 });
 
-// Listen for messages from popup
+// In-memory dedup for auto-saved URLs (clears on service worker restart)
+const autoSavedUrls = new Set();
+
+// Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "save") {
     savePage(message.data).then(sendResponse);
@@ -88,6 +91,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.action === "saveHighlight") {
     saveHighlight(message.data).then(sendResponse);
+    return true;
+  }
+  if (message.action === "autoSave") {
+    if (autoSavedUrls.has(message.data.url)) {
+      sendResponse({ success: false, duplicate: true });
+      return;
+    }
+    savePage(message.data).then((result) => {
+      if (result.success || result.duplicate) {
+        autoSavedUrls.add(message.data.url);
+      }
+      sendResponse(result);
+    });
     return true;
   }
 });
