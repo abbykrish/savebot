@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/components/ui/modal";
 import { Tag } from "@/lib/types";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
@@ -20,6 +21,7 @@ export function TagManager({
   onCreateTag,
   onDeleteTag,
 }: TagManagerProps) {
+  const { confirm } = useConfirm();
   const [isAdding, setIsAdding] = useState(false);
   const [newTagName, setNewTagName] = useState("");
 
@@ -80,11 +82,19 @@ export function TagManager({
             >
               {tag.name}
               <span
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  onDeleteTag(tag.id);
+                  const ok = await confirm({
+                    title: `Delete "${tag.name}"`,
+                    message: "This tag will be removed from all saves.",
+                    confirmLabel: "Delete",
+                    variant: "danger",
+                  });
+                  if (ok) onDeleteTag(tag.id);
                 }}
                 className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                role="button"
+                aria-label={`Delete ${tag.name} tag`}
               >
                 <X className="h-2.5 w-2.5 inline" />
               </span>

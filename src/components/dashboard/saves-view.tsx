@@ -4,6 +4,8 @@ import { QuickSave } from "@/components/dashboard/quick-save";
 import { ReadingPane } from "@/components/dashboard/reading-pane";
 import { SavesGrid } from "@/components/dashboard/saves-grid";
 import { SearchBar } from "@/components/dashboard/search-bar";
+import { useConfirm } from "@/components/ui/modal";
+import { useToast } from "@/components/ui/toast";
 import { useSaves } from "@/hooks/use-saves";
 import { useSearch } from "@/hooks/use-search";
 import { useDashboardContext } from "@/app/dashboard/layout";
@@ -36,6 +38,8 @@ export function SavesView({
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [highlightFilter, setHighlightFilter] = useState(false);
   const { selectedTagId, allTags, refetchTags, createTag, addTagToSave, removeTagFromSave, folders, selectedFolderId, toggleSidebar } = useDashboardContext();
+  const { toast } = useToast();
+  const { confirm } = useConfirm();
 
   // Look up the selected folder's tag_ids for dynamic filtering
   const selectedFolder = useMemo(
@@ -105,18 +109,22 @@ export function SavesView({
   const handleProcessAi = useCallback(
     async (saveId: string) => {
       try {
-        await fetch("/api/process-ai", {
+        const res = await fetch("/api/process-ai", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ save_id: saveId }),
         });
+        if (!res.ok) throw new Error("AI processing failed");
+        toast("AI summary generated");
         refetchSaves();
         refetchTags();
       } catch (err) {
         console.error("AI processing failed:", err);
+        toast("AI processing failed. Try again.", "error");
+        refetchSaves();
       }
     },
-    [refetchSaves, refetchTags]
+    [refetchSaves, refetchTags, toast]
   );
 
   const handleAddTag = useCallback(
@@ -148,8 +156,16 @@ export function SavesView({
   );
 
   const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: "Delete save",
+      message: "This save will be permanently deleted. This cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     if (selectedSaveId === id) setSelectedSaveId(null);
     await deleteSave(id);
+    toast("Save deleted");
   };
 
   return (
@@ -214,7 +230,13 @@ export function SavesView({
             onToggleArchive={toggleArchive}
             onToggleRead={toggleRead}
             onDelete={handleDelete}
-            emptyMessage={emptyMessage}
+            emptyMessage={
+              searchQuery
+                ? `No results for "${searchQuery}"`
+                : readFilter !== "all"
+                  ? `No ${readFilter} saves`
+                  : emptyMessage
+            }
           />
         </div>
 

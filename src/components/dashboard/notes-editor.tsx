@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Check } from "lucide-react";
 
 interface NotesEditorProps {
   notes: string;
@@ -9,7 +10,9 @@ interface NotesEditorProps {
 
 export function NotesEditor({ notes, onSave }: NotesEditorProps) {
   const [value, setValue] = useState(notes);
+  const [saved, setSaved] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout>(undefined);
+  const savedTimerRef = useRef<NodeJS.Timeout>(undefined);
 
   useEffect(() => {
     setValue(notes);
@@ -20,6 +23,9 @@ export function NotesEditor({ notes, onSave }: NotesEditorProps) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         onSave(text);
+        setSaved(true);
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       }, 800);
     },
     [onSave]
@@ -28,14 +34,23 @@ export function NotesEditor({ notes, onSave }: NotesEditorProps) {
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, []);
 
   return (
     <div>
-      <label className="text-xs font-medium text-neutral-500 mb-1.5 block">
-        Notes
-      </label>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-xs font-medium text-neutral-500">
+          Notes
+        </label>
+        {saved && (
+          <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400 animate-in fade-in duration-200">
+            <Check className="h-3 w-3" />
+            Saved
+          </span>
+        )}
+      </div>
       <textarea
         value={value}
         onChange={(e) => {

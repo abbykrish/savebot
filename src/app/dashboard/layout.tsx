@@ -1,6 +1,8 @@
 "use client";
 
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { ModalProvider } from "@/components/ui/modal";
+import { ToastProvider } from "@/components/ui/toast";
 import { useFolders } from "@/hooks/use-folders";
 import { useTags } from "@/hooks/use-tags";
 import { createClient } from "@/lib/supabase/client";
@@ -81,6 +83,8 @@ export default function DashboardLayout({
   }
 
   return (
+    <ModalProvider>
+    <ToastProvider>
     <div className="h-screen flex overflow-hidden">
       {/* Backdrop overlay for mobile sidebar */}
       {sidebarOpen && (
@@ -131,5 +135,7 @@ export default function DashboardLayout({
         {children}
       </DashboardContext.Provider>
     </div>
+    </ToastProvider>
+    </ModalProvider>
   );
 }

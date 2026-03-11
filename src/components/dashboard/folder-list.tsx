@@ -1,5 +1,6 @@
 "use client";
 
+import { useConfirm } from "@/components/ui/modal";
 import { Folder, Tag } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Check, FolderIcon, Plus, Trash2 } from "lucide-react";
@@ -22,6 +23,7 @@ export function FolderList({
   onCreateFolder,
   onDeleteFolder,
 }: FolderListProps) {
+  const { confirm } = useConfirm();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -187,11 +189,18 @@ export function FolderList({
               )}
             </div>
             <button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                onDeleteFolder(folder.id);
+                const ok = await confirm({
+                  title: `Delete "${folder.name}"`,
+                  message: "This folder will be deleted. Saves inside will not be removed.",
+                  confirmLabel: "Delete",
+                  variant: "danger",
+                });
+                if (ok) onDeleteFolder(folder.id);
               }}
               className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              aria-label={`Delete ${folder.name} folder`}
             >
               <Trash2 className="h-3 w-3 text-neutral-400" />
             </button>
