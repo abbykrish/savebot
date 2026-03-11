@@ -48,6 +48,30 @@ function isBlockedUrl(url) {
     // Email
     /^https?:\/\/mail\.google\.com/,
     /^https?:\/\/outlook\.(live|office)\.com/,
+    // Video calls & meetings
+    /^https?:\/\/meet\.google\.com/,
+    /^https?:\/\/([\w-]+\.)?zoom\.us/,
+    /^https?:\/\/teams\.microsoft\.com/,
+    // Productivity & workspace tools
+    /^https?:\/\/docs\.google\.com/,
+    /^https?:\/\/sheets\.google\.com/,
+    /^https?:\/\/slides\.google\.com/,
+    /^https?:\/\/drive\.google\.com/,
+    /^https?:\/\/calendar\.google\.com/,
+    /^https?:\/\/keep\.google\.com/,
+    /^https?:\/\/([\w-]+\.)?notion\.so/,
+    /^https?:\/\/([\w-]+\.)?slack\.com/,
+    /^https?:\/\/([\w-]+\.)?discord\.com/,
+    /^https?:\/\/([\w-]+\.)?figma\.com/,
+    /^https?:\/\/([\w-]+\.)?canva\.com/,
+    /^https?:\/\/([\w-]+\.)?trello\.com/,
+    /^https?:\/\/([\w-]+\.)?asana\.com/,
+    /^https?:\/\/([\w-]+\.)?linear\.app/,
+    /^https?:\/\/([\w-]+\.)?jira\.atlassian\.com/,
+    /^https?:\/\/([\w-]+\.)?miro\.com/,
+    /^https?:\/\/([\w-]+\.)?airtable\.com/,
+    /^https?:\/\/([\w-]+\.)?dropbox\.com/,
+    /^https?:\/\/([\w-]+\.)?1password\.com/,
     // Localhost
     /^https?:\/\/(localhost|127\.0\.0\.1)/,
   ];
