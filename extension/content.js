@@ -72,6 +72,15 @@ function isBlockedUrl(url) {
     /^https?:\/\/([\w-]+\.)?airtable\.com/,
     /^https?:\/\/([\w-]+\.)?dropbox\.com/,
     /^https?:\/\/([\w-]+\.)?1password\.com/,
+    // AI chatbots
+    /^https?:\/\/claude\.ai/,
+    /^https?:\/\/gemini\.google\.com/,
+    /^https?:\/\/chatgpt\.com/,
+    /^https?:\/\/chat\.openai\.com/,
+    /^https?:\/\/(www\.)?perplexity\.ai/,
+    /^https?:\/\/copilot\.microsoft\.com/,
+    /^https?:\/\/poe\.com/,
+    /^https?:\/\/(www\.)?character\.ai/,
     // Localhost
     /^https?:\/\/(localhost|127\.0\.0\.1)/,
   ];
