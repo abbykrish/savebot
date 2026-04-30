@@ -98,8 +98,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: false, duplicate: true });
       return;
     }
-    savePage(message.data).then((result) => {
-      if (result.success || result.duplicate) {
+    savePage({ ...message.data, auto: true }).then((result) => {
+      // Treat "not article-shaped" rejections like duplicates: cache the URL so
+      // we don't re-check it every linger cycle on the same tab.
+      if (result.success || result.duplicate || result.notArticle) {
         autoSavedUrls.add(message.data.url);
       }
       sendResponse(result);
@@ -204,19 +206,24 @@ async function authFetch(endpoint, body) {
   return { response, error: null };
 }
 
-async function savePage({ url, title }) {
+async function savePage({ url, title, auto }) {
   const lowerUrl = url.toLowerCase();
   const isPdf = lowerUrl.endsWith(".pdf") || lowerUrl.includes("arxiv.org/pdf/");
   const endpoint = isPdf ? "/api/save-pdf" : "/api/save";
 
   try {
-    const { response, error } = await authFetch(endpoint, { url, title });
+    const body = { url, title };
+    if (auto) body.auto = true;
+    const { response, error } = await authFetch(endpoint, body);
     if (error) return { success: false, error };
 
     const data = await response.json();
 
     if (response.status === 409) {
       return { success: false, duplicate: true, id: data.id };
+    }
+    if (response.status === 422) {
+      return { success: false, notArticle: true, reason: data.reason };
     }
     if (!response.ok) {
       return { success: false, error: data.error || `Server error: ${response.status}` };

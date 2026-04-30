@@ -12,6 +12,7 @@ const saveSchema = z.object({
   url: z.url().max(2048),
   title: z.string().max(500).optional(),
   highlight: z.string().max(10000).optional(),
+  auto: z.boolean().optional(),
 });
 
 export async function OPTIONS(request: Request) {
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
     if (!parsed.success) {
       return jsonResponse({ error: "Invalid input", details: parsed.error.issues }, request, 400);
     }
-    const { url, title: providedTitle, highlight } = parsed.data;
+    const { url, title: providedTitle, highlight, auto } = parsed.data;
 
     // Reject non-http(s) URLs
     const scheme = new URL(url).protocol;
@@ -142,7 +143,16 @@ export async function POST(request: Request) {
     try {
       extracted = await extractArticle(url);
     } catch {
-      // If extraction fails, save with just the URL
+      // Auto-save: if we can't extract anything, don't save — the page is
+      // almost certainly an app/transactional surface, not an article.
+      if (auto) {
+        return jsonResponse(
+          { error: "Not article-shaped", reason: "extraction-failed" },
+          request,
+          422
+        );
+      }
+      // Manual save: respect the user's explicit choice and save with just the URL.
       const { data: save, error } = await supabase
         .from("saves")
         .insert({
@@ -159,6 +169,16 @@ export async function POST(request: Request) {
 
       triggerAutoTag(supabase, user.id, save.id, save.title, save.title);
       return jsonResponse({ save, extraction_failed: true }, request);
+    }
+
+    // Auto-save only: skip pages that don't look like articles (product pages,
+    // booking flows, app dashboards, etc.). Manual saves always go through.
+    if (auto && extracted && !extracted.isArticle) {
+      return jsonResponse(
+        { error: "Not article-shaped", reason: extracted.rejectReason },
+        request,
+        422
+      );
     }
 
     const title = providedTitle || extracted?.title || url;
